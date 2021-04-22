@@ -26,6 +26,7 @@ git clone https://github.com/jakobbeckmann/ucc-workshop.git
 And initialize the git submodules to obtain our demo application:
 
 ```bash
+cd ucc-workshop
 git submodule update --init --checkout
 ```
 
@@ -68,5 +69,32 @@ To stop the container, simply press `Ctrl-c` in the terminal session where you l
 
 ### Pipeline
 
+Prepare the infrastructure for the pipeline by running:
+
+```bash
+./scripts/pipeline.lua prep
+```
+
+Once this is done, launch a proxy using:
+
+```bash
+kubectl proxy > /dev/null &
+```
+
+This allows you to access a Kubernetes dashboard under:
+
+```
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/.
+```
+
+Once you are on this page, you will be required to log in. Select the "token" option and paste the
+token returned from the following command into the text field:
+
+```bash
+./scripts/pipeline.lua token
+```
+
+Play around with the dashboard and investigate the interesting information it can provide you. Note
+that we have not yet deployed any application.
 
 ### Kubernetes
