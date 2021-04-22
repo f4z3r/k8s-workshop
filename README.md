@@ -208,7 +208,7 @@ kubectl -n demo get secret/sb-demo-db-creds -o yaml
 > being able to read it.
 
 The dummy configuration file is however being deployed as part of the pipeline. It can be found
-under [`./configmap.yaml`][confimap]. Note that this is a Kubernetes object, but it only contains
+under [`./configmap.yaml`][configmap]. Note that this is a Kubernetes object, but it only contains
 the configuration for a SpringBoot application. The contents are then mounted inside the containers
 as we saw with the first command we executed within a pod.
 
