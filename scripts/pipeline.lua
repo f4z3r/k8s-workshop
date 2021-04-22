@@ -4,8 +4,25 @@
 Author: Jakob Beckmann <jakob.beckmann@ipt.ch>
 Description:
  Pipeline definition for UCC workshop to simulate a deployment of a SpringBoot application to a
- Kubernetes cluster via a pipeline.
+ Kubernetes cluster via a pipeline. This performs the following:
+  - Check that all required tools are installed.
+  - Deploy a local Kubernetes cluster with 3 agent and 1 server node.
+  - Create a local docker registry which is attached to the Kubernetes cluster network.
+  - Deploy the standard Kubernetes dashboard to have a graphical overview of the cluster.
+  - Create a ServiceAccount and ClusterRoleBinding to give admin rights to the user when accessing
+    the dashboard.
+  - Build a docker image of a custom application, and push it to the shared local registry.
+  - Deploy the docker image as an application with:
+    - A Deployment for the actual image.
+    - A Secret to show how to inject environment variables.
+    - A ConfigMap to show how to inject configuration.
 Dependencies:
+ - Lua 5.3
+External Dependencies:
+ - kubectl
+ - k3d
+ - docker
+ - ps
 ]]--
 
 local cluster_name = "pipeline-cluster"
