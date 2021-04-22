@@ -5,6 +5,10 @@
   * [Docker](#docker)
   * [Pipeline](#pipeline)
   * [Kubernetes](#kubernetes)
+    * [Resilience](#resilience)
+    * [Logging](#logging)
+    * [Debugging](#debugging)
+    * [Configuration](#configuration)
 
 ---
 
