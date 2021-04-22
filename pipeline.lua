@@ -210,7 +210,7 @@ function run_lines(cmd)
 end
 
 function is_docker_running()
-  local out = run("systemctl status docker")
+  local out = run("systemctl status snap.docker.dockerd.service")
   local match = out:match("Active: (%w+)")
   return match == "active"
 end
