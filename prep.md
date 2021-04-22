@@ -12,6 +12,9 @@ Then, download the Ubuntu Focal 20.04 TLS image from the [official website][1]. 
 installation of the virtual machine. Note that the install can be "minimal", no need to install
 Office Tools, etc.
 
+> Please do not make the VM too small. A decent amount of software will run inside it. I recommend
+> at least 1 vCPUs and 4GiB of RAM at the very least.
+
 [0]: https://www.virtualbox.org/
 [1]: https://ubuntu.com/download/desktop
 
