@@ -25,7 +25,7 @@ Once the VM is installed and running, please update the software on the VM:
 ```bash
 sudo apt update
 sudo apt upgrade -y
-sudo apt install lua5.3 -y
+sudo apt install lua5.3 git -y
 ```
 
 Then perform the following steps to install the required software.
