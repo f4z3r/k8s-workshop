@@ -92,14 +92,19 @@ spec:
               name: sb-demo-db-creds
               key: db-password
         name: sb-demo
+        readinessProbe:
+          httpGet:
+            path: /customers
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
         ports:
         - containerPort: 8080
           protocol: TCP
           name: http
         volumeMounts:
         - name: config-volume
-          mountPath: /app/application.properties
-          subPath: application.properties
+          mountPath: /app/config
       volumes:
         - name: config-volume
           configMap:

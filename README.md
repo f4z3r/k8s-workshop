@@ -98,3 +98,138 @@ Play around with the dashboard and investigate the interesting information it ca
 that we have not yet deployed any application.
 
 ### Kubernetes
+
+We will now deploy our application via a pipeline to see how easily a SpringBoot application can be
+run and how resilient it is:
+
+```bash
+./pipeline.lua
+```
+
+Once the command above has completed, the application will be deployed with three replicas on our
+cluster. Networking is configured by the pipeline so you can access the API via the following
+endpoint:
+
+```
+localhost:9080/customers/1
+```
+
+After the pipeline has deployed everything, it should also be visible on the Kubernetes dashboard.
+Note that all objects relating to our application are placed in the `demo` namespace within the
+cluster.
+
+#### Resilience
+
+Get all pods that run our application using:
+
+```bash
+kubectl -n demo get pods
+```
+
+This should result in something such as:
+
+```
+NAME                              READY   STATUS    RESTARTS   AGE
+sb-demo-deploy-7d8b8f4fdd-2mjz9   1/1     Running   0          13s
+sb-demo-deploy-7d8b8f4fdd-zlsnx   1/1     Running   0          13s
+sb-demo-deploy-7d8b8f4fdd-llsmz   1/1     Running   0          13s
+```
+
+To showcase resilience, we will delete one of the pods to simulate a crash. In order to do this,
+copy the name of one of the pods and enter the following command:
+
+```bash
+kubectl -n demo delete pod/sb-demo-deploy-7d8b8f4fdd-zlsnx
+```
+
+Due to how Kubernetes manages its resources, it will notice that there are less pods than desired
+(whether it was deleted or actually crashed does not matter to Kubernetes), and it will create
+another one instantly. To see this, run the `get pods` command again:
+
+```
+NAME                              READY   STATUS    RESTARTS   AGE
+sb-demo-deploy-7d8b8f4fdd-2mjz9   1/1     Running   0          3m5s
+sb-demo-deploy-7d8b8f4fdd-llsmz   1/1     Running   0          3m5s
+sb-demo-deploy-7d8b8f4fdd-h6rh2   1/1     Running   0          4s
+```
+
+Note that during the (very short) downtime of the pod, the API was still fully available since
+Kubernetes would have directed traffic only to the pods that are ready.
+
+#### Logging
+
+In order to read logs of one of the applications, use the following command on one of the pods:
+
+```bash
+kubectl -n demo logs pod/sb-demo-deploy-79b8db5d74-nm4cr
+```
+
+Optionally add the `-f` flag to follow logs.
+
+#### Debugging
+
+We can execute commands in our pods in order to perform some simple debugging. This is done as
+follows:
+
+```bash
+kubectl -n demo exec pod/sb-demo-deploy-79b8db5d74-nm4cr -- cat /app/config/application.properties
+```
+
+> Note that this can only be used to execute programs that actually exist within the container. In
+> this case `cat` is in the container and can therefore be executed. However, it happens very often
+> that there are nearly no programs within the container other than the application being run, in
+> which case such a `cat` would fail.
+
+This can also be used to start an interactive shell:
+
+```bash
+kubectl -n demo exec -it pod/sb-demo-deploy-79b8db5d74-nm4cr -- bash
+```
+
+#### Configuration
+
+Our pipeline configures several things in our pipeline that are external to the containers being
+run:
+
+- A (dummy) configuration file mounted at `/app/config/application.properties`.
+- A (dummy) JDBC connection URL stored in an environment variable `JDBC_URL`.
+- A (dummy) JDBC user stored in an environment variable `JDBC_USER`.
+- A (dummy) JDBC password stored in an environment variable `JDBC_PASSWORD`.
+
+The JDBC information not stored here in the repository as it would provide a security risk to store
+credentials in control version systems. However, you can view and edit the information about it
+stored in Kubernetes:
+
+```bash
+kubectl -n demo get secret/sb-demo-db-creds -o yaml
+```
+
+> Note that the information from the secret is base64 encoded, so you would need to decode it before
+> being able to read it.
+
+The dummy configuration file is however being deployed as part of the pipeline. It can be found
+under [`./configmap.yaml`][confimap]. Note that this is a Kubernetes object, but it only contains
+the configuration for a SpringBoot application. The contents are then mounted inside the containers
+as we saw with the first command we executed within a pod.
+
+Kubernetes manages these resources dynamically, therefore you can change any value inside the
+[`./configmap.yaml`][configmap] and rerun the pipeline with:
+
+```bash
+./pipeline.lua
+```
+
+> Note that it might take some time before the changes can be observed. Kubernetes is not
+> instantaneous when performing ConfigMap updates. For those interested: this is done on `kubelet`
+> sync periods, which are typically every minute.
+
+Once this is done, you will be able to observe the change inside the containers by running the
+following again:
+
+```bash
+kubectl -n demo exec pod/sb-demo-deploy-79b8db5d74-nm4cr -- cat /app/config/application.properties
+```
+
+Note that the pods were not restarted to get the configuration updated!
+
+[configmap]: ./configmap.yaml
