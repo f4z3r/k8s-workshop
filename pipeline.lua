@@ -16,13 +16,14 @@ Description:
     - A Deployment for the actual image.
     - A Secret to show how to inject environment variables.
     - A ConfigMap to show how to inject configuration.
+    - A Service to forward traffic to the deployed services.
+    - A Ingress to allow external traffic.
 Dependencies:
  - Lua 5.3
 External Dependencies:
  - kubectl
  - k3d
  - docker
- - ps
 ]]--
 
 local cluster_name = "pipeline-cluster"
@@ -50,6 +51,108 @@ subjects:
 - kind: ServiceAccount
   name: admin-user
   namespace: kubernetes-dashboard
+]]
+
+local k8s_ns = "demo"
+local k8s_deployment = [[
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sb-demo
+  name: sb-demo-deploy
+  namespace: demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sb-demo
+  template:
+    metadata:
+      labels:
+        app: sb-demo
+    spec:
+      containers:
+      - image: k3d-registry-pipeline-cluster.localhost:5000/pipeline-cluster:pipeline
+        imagePullPolicy: Always
+        env:
+        - name: JDBC_URL
+          valueFrom:
+            secretKeyRef:
+              name: sb-demo-db-creds
+              key: db-url
+        - name: JDBC_USER
+          valueFrom:
+            secretKeyRef:
+              name: sb-demo-db-creds
+              key: db-user
+        - name: JDBC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: sb-demo-db-creds
+              key: db-password
+        name: sb-demo
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+          name: http
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/application.properties
+          subPath: application.properties
+      volumes:
+        - name: config-volume
+          configMap:
+            name: sb-demo-cm
+]]
+local k8s_service = [[
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sb-demo
+  name: sb-demo-svc
+  namespace: demo
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: sb-demo
+  type: ClusterIP
+]]
+local k8s_ingress = [[
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sb-demo
+  namespace: demo
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sb-demo-svc
+            port:
+              number: 8080
+]]
+local k8s_secret = [[
+apiVersion: v1
+data:
+  db-url: amRiYzpvcmFjbGU6dGhpbjpAbXlvcmFjbGUuZGIuc2VydmVyOjE1MjE6bXlfc2lk
+  db-user: amFrb2I=
+  db-password: c3VwZXJzZWNyZXQ=
+kind: Secret
+metadata:
+  name: sb-demo-db-creds
+  namespace: demo
+type: Opaque
 ]]
 
 local dockerfile = [[
@@ -117,7 +220,7 @@ function is_k3d_installed()
 end
 
 function is_kubectl_installed()
-  return os.execute("kubectl version > /dev/null 2>&1")
+  return os.execute("kubectl -h > /dev/null 2>&1")
 end
 
 function is_cluster_running(name)
@@ -136,13 +239,13 @@ function is_cluster_running(name)
   return found
 end
 
-function is_proxy_running()
-  return os.execute("ps -C kubectl > /dev/null 2>&1")
+function is_dashboard_deployed()
+  return os.execute("kubectl get ns/kubernetes-dashboard > /dev/null 2>&1")
 end
 
 function setup_dashboard()
-  local sa_file = "./assets/sa.yaml"
-  local crb_file = "./assets/crb.yaml"
+  local sa_file = os.tmpname()
+  local crb_file = os.tmpname()
   local cmd = "kubectl apply -f %s"
   local worked = os.execute(string.format(cmd, dashboard_link))
   local del_sa = write_file(sa_file, dashboard_sa)
@@ -155,12 +258,12 @@ function setup_dashboard()
 end
 
 function create_cluster(name, registry)
-  local cmd = "k3d cluster create %s -a 3 -s 1 --api-port 0.0.0.0:6550"
-  local worked = os.execute(string.format(cmd, name))
-  cmd = "docker run --name %s -d -p 5000:5000 registry:2"
-  worked = worked and os.execute(string.format(cmd, registry))
-  cmd = "docker network connect k3d-%s %s"
+  local cmd = "k3d registry create %s.localhost --port 5000"
+  local worked = os.execute(string.format(cmd, registry))
+  cmd = 'k3d cluster create %s -a 3 -s 1 --api-port 0.0.0.0:6550 -p "9080:80@loadbalancer" --registry-use k3d-%s.localhost:5000'
   worked = worked and os.execute(string.format(cmd, name, registry))
+  worked = worked and os.execute("sleep 10s")
+  worked = worked and os.execute("kubectl create ns "..k8s_ns)
   return worked
 end
 
@@ -174,12 +277,16 @@ function pre_checks()
   elseif not is_k3d_installed() then
     io.write("ERROR: k3d does not seem to be installed\n")
     os.exit(127)
-  elseif not is_cluster_running(cluster_name) then
+  end
+
+  if not is_cluster_running(cluster_name) then
     if not create_cluster(cluster_name, registry_name) then
       io.write("ERROR: failed to create cluster for pipeline\n")
       os.exit(127)
     end
-  elseif not is_proxy_running() then
+  end
+
+  if not is_dashboard_deployed() then
     if not setup_dashboard() then
       io.write("ERROR: failed to create cluster dashboard\n")
       os.exit(127)
@@ -190,9 +297,9 @@ end
 function build_image(name, registry)
   local filename = "./dockerfile-pipeline"
   local del = write_file(filename, dockerfile)
-  local cmd = "docker build -t %s.localhost:5000/%s:pipeline -f %s ./"
+  local cmd = "docker build -t k3d-%s.localhost:5000/%s:pipeline -f %s ./"
   local worked = os.execute(string.format(cmd, registry, name, filename))
-  cmd = "docker push %s.localhost:5000/%s:pipeline"
+  cmd = "docker push k3d-%s.localhost:5000/%s:pipeline"
   worked = worked and os.execute(string.format(cmd, registry, name))
   worked = worked and del()
   return worked
@@ -206,6 +313,28 @@ function print_sa_token()
   io.write(token, "\n")
 end
 
+function kube_apply_contents(contents)
+  local filename = os.tmpname()
+  local del_file = write_file(filename, contents)
+  local worked = os.execute("kubectl apply -f "..filename)
+  worked = worked and del_file()
+  return worked
+end
+
+function create_configmap()
+  local cmd = 'kubectl apply -f ./configmap.yaml'
+  return os.execute(cmd)
+end
+
+function deploy()
+  local worked = kube_apply_contents(k8s_service)
+  worked = worked and kube_apply_contents(k8s_secret)
+  worked = worked and create_configmap()
+  worked = worked and kube_apply_contents(k8s_deployment)
+  worked = worked and kube_apply_contents(k8s_ingress)
+  return worked
+end
+
 function main()
   pre_checks()
   if get_arg() == "prep" then
@@ -216,6 +345,10 @@ function main()
   end
   if not build_image(cluster_name, registry_name) then
     io.write("ERROR: failed to create build image\n")
+    os.exit(124)
+  end
+  if not deploy() then
+    io.write("ERROR: deployment failed\n")
     os.exit(124)
   end
 end

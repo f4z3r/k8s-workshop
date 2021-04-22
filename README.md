@@ -72,7 +72,7 @@ To stop the container, simply press `Ctrl-c` in the terminal session where you l
 Prepare the infrastructure for the pipeline by running:
 
 ```bash
-./scripts/pipeline.lua prep
+./pipeline.lua prep
 ```
 
 Once this is done, launch a proxy using:
@@ -91,7 +91,7 @@ Once you are on this page, you will be required to log in. Select the "token" op
 token returned from the following command into the text field:
 
 ```bash
-./scripts/pipeline.lua token
+./pipeline.lua token
 ```
 
 Play around with the dashboard and investigate the interesting information it can provide you. Note
