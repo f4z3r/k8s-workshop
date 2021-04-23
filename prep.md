@@ -32,6 +32,8 @@ Then perform the following steps to install the required software.
 
 #### Docker
 
+> Docker is the runtime engine that will both build and run our software.
+
 Install `docker`:
 
 ```bash
@@ -51,6 +53,8 @@ This should download an image and print `Welcome to the UCC workshop!!!`.
 
 #### Kubectl
 
+> Kubectl is the client application that we will use to interact with Kubernetes.
+
 Install `kubectl`:
 
 ```bash
@@ -58,6 +62,9 @@ sudo snap install kubectl --classic
 ```
 
 #### K3D
+
+> K3d is the software we will use to run a local Kubernetes cluster inside our VMs. This is to
+> "fake" a cluster with several nodes on our systems.
 
 Install `k3d`:
 

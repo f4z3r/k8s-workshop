@@ -24,7 +24,7 @@ environment up and running and be ready on the day of the workshop.
 In case you have not ready, please clone this repository to the VM:
 
 ```bash
-git clone https://github.com/jakobbeckmann/ucc-workshop.git
+git clone https://github.com/jakobbeckmann/k8s-workshop.git
 ```
 
 And initialize the git submodules to obtain our demo application:
@@ -54,7 +54,12 @@ in which to find the Dockerfile should be `./`, as provided by the last argument
 Once the image is built, you can run a container locally using:
 
 ```bash
-docker run --rm -p 8080:8080 ucc-demo:0.1.0
+docker run --rm -p 8080:8080 \
+  --name ucc-container \
+  -e JDBC_URL=jdbc:oracle:thin:@myoracle.db.server:1521:my_sid \
+  -e JDBC_USER=jakob \
+  -e JDBC_PASSWORD=supersecret \
+  ucc-demo:0.1.0
 ```
 
 This will launch a container based on the `ucc-demo:0.1.0` image and bind the port `8080` from the
@@ -66,6 +71,13 @@ Hans Zimmer appears).
 
 > The `--rm` flag is simply used to automatically delete the container once it is stopped. Otherwise
 > the container would still be lying around on our machine once it exited.
+
+We can now also execute commands inside the docker container with commands such as (you can run this
+from within another terminal):
+
+```bash
+docker exec ucc-container echo "Hello from within the docker container!"
+```
 
 To stop the container, simply press `Ctrl-c` in the terminal session where you launched it.
 
