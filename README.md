@@ -30,7 +30,7 @@ git clone https://github.com/jakobbeckmann/k8s-workshop.git
 And initialize the git submodules to obtain our demo application:
 
 ```bash
-cd ucc-workshop
+cd k8s-workshop
 git submodule update --init --checkout
 ```
 
