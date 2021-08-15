@@ -1,4 +1,4 @@
-# UCC Workshop
+# IPT Workshop Climb&Code Day 1
 
 * [Preparation](#preparation)
 * [Workshop Overview](#workshop-overview)
@@ -32,6 +32,7 @@ And initialize the git submodules to obtain our demo application:
 ```bash
 cd k8s-workshop
 git submodule update --init --checkout
+cd day1
 ```
 
 ### Docker
@@ -45,24 +46,24 @@ Docker image by running:
 
 ```bash
 # in project root
-docker build -t ucc-demo:0.1.0 ./
+docker build -t ipt-demo:0.1.0 ./
 ```
 
-This generates an image named `ucc-demo` with tag (a way to version images) `0.1.0`. The directory
+This generates an image named `ipt-demo` with tag (a way to version images) `0.1.0`. The directory
 in which to find the Dockerfile should be `./`, as provided by the last argument to the command.
 
 Once the image is built, you can run a container locally using:
 
 ```bash
 docker run --rm -p 8080:8080 \
-  --name ucc-container \
+  --name ipt-container \
   -e JDBC_URL=jdbc:oracle:thin:@myoracle.db.server:1521:my_sid \
   -e JDBC_USER=jakob \
   -e JDBC_PASSWORD=supersecret \
-  ucc-demo:0.1.0
+  ipt-demo:0.1.0
 ```
 
-This will launch a container based on the `ucc-demo:0.1.0` image and bind the port `8080` from the
+This will launch a container based on the `ipt-demo:0.1.0` image and bind the port `8080` from the
 container to the host port `8080`. Therefore, any API exposed within the container on port `8080`
 should be available via the browser on `localhost:8080`. As our demo application does indeed expose
 an endpoint on said port, open your browser and see if you can get a response from the SpringBoot
@@ -76,7 +77,7 @@ We can now also execute commands inside the docker container with commands such 
 from within another terminal):
 
 ```bash
-docker exec ucc-container echo "Hello from within the docker container!"
+docker exec ipt-container echo "Hello from within the docker container!"
 ```
 
 To stop the container, simply press `Ctrl-c` in the terminal session where you launched it.

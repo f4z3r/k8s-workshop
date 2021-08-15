@@ -46,10 +46,10 @@ sudo snap install docker
 And test the installation:
 
 ```bash
-docker run archlinux echo "Welcome to the UCC workshop!!!"
+docker run archlinux echo "Welcome to the IPT workshop!!!"
 ```
 
-This should download an image and print `Welcome to the UCC workshop!!!`.
+This should download an image and print `Welcome to the IPT workshop!!!`.
 
 #### Kubectl
 
@@ -59,6 +59,16 @@ Install `kubectl`:
 
 ```bash
 sudo snap install kubectl --classic
+```
+
+#### Helm
+
+> Helm is similar to a package manager to install more complex configurations on Kubernetes.
+
+Install `helm`:
+
+```bash
+sudo snap install helm --classic
 ```
 
 #### K3D
@@ -88,7 +98,7 @@ kubectl get nodes
 which should return a single node such as:
 
 ```
-ubuntu@ucc-demo:~$ kubectl get nodes
+ubuntu@ipt-demo:~$ kubectl get nodes
 NAME                STATUS   ROLES                  AGE   VERSION
 k3d-demo-server-0   Ready    control-plane,master   18s   v1.20.5+k3s1
 ```

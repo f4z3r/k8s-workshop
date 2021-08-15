@@ -1,3 +1,3 @@
-[submodule "app"]
-	path = app
+[submodule "day1/app"]
+	path = day1/app
 	url = https://github.com/julyvee/sb-next-level.git
