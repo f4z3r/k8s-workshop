@@ -13,10 +13,14 @@ installation of the virtual machine. Note that the install can be "minimal", no 
 Office Tools, etc.
 
 > Please do not make the VM too small. A decent amount of software will run inside it. I recommend
-> at least 1 vCPUs and 4GiB of RAM at the very least.
+> at least 2 vCPUs and 8GiB of RAM minimum.
 
 [0]: https://www.virtualbox.org/
 [1]: https://ubuntu.com/download/desktop
+
+> Since nearly everything we will run will be inside docker, you can also install the tools locally
+> on another Linux distribution you might be using. If you decide to do this, please make sure that
+> you install quite recent versions of the tools described below.
 
 ### Install Required Software
 
