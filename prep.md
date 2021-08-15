@@ -50,10 +50,10 @@ sudo snap install docker
 And test the installation:
 
 ```bash
-docker run archlinux echo "Welcome to the IPT workshop!!!"
+docker run archlinux echo "Get stoked for Climb and Code!!!"
 ```
 
-This should download an image and print `Welcome to the IPT workshop!!!`.
+This should download an image and print `Get stoked for Climb and Code!!!`.
 
 #### Kubectl
 
