@@ -103,6 +103,15 @@ NAME                STATUS   ROLES                  AGE   VERSION
 k3d-demo-server-0   Ready    control-plane,master   18s   v1.20.5+k3s1
 ```
 
+Check that `helm` finds some releases that are installed by default in our cluster setup.
+
+```
+ubuntu@ipt-demo:~$ helm list -A
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
+traefik         kube-system     1               2021-06-06 15:46:19.258668874 +0000 UTC deployed        traefik-9.18.2          2.4.8
+traefik-crd     kube-system     1               2021-06-06 15:46:18.759570934 +0000 UTC deployed        traefik-crd-9.18.2
+```
+
 Then delete the cluster:
 
 ```bash

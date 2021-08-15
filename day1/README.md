@@ -17,7 +17,7 @@
 Please follow the instructions described in [`prep.md`][0] before the workshop in order to have the
 environment up and running and be ready on the day of the workshop.
 
-[0]: ./prep.md
+[0]: ../prep.md
 
 ## Workshop Overview
 
