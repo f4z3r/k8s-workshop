@@ -321,6 +321,9 @@ rdb := redis.NewClient(&redis.Options{
 
 And I commented out the block creating a client for a Redis cluster (lines 23-34).
 
+Moreover, the handler for the readiness probe, I commented out the block from line 68 to 70, and
+uncommented line 66.
+
 </details>
 
 

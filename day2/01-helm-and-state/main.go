@@ -62,9 +62,13 @@ func main() {
 
     // For readiness probe
     http.HandleFunc("/readiness", func(w http.ResponseWriter, r *http.Request) {
+        // TODO(@jakob): if using a single instance, uncomment the following line
+        // err := rdb.Ping(ctx).Err()
+        // TODO(@jakob): if using a single instance, comment the following 3 lines
         err := rdb.ForEachShard(ctx, func(ctx context.Context, shard *redis.Client) error {
             return shard.Ping(ctx).Err()
         })
+
         if err != nil {
            http.Error(w, "not ready yet!", 500) 
         } else {
