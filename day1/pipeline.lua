@@ -137,7 +137,8 @@ metadata:
     ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   rules:
-  - http:
+  - host: sb-demo.localhost
+    http:
       paths:
       - path: /
         pathType: Prefix

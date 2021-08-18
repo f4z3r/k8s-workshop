@@ -128,8 +128,13 @@ cluster. Networking is configured by the pipeline so you can access the API via 
 endpoint:
 
 ```
-localhost:9080/customers/1
+sb-demo.localhost:9080/customers/1
 ```
+
+> If you get an issue here (something other than a default 404 page, and not the desired JSON), try
+> adding the following line to your `/etc/hosts` file:
+>
+>     127.0.0.1   sb-demo.localhost
 
 After the pipeline has deployed everything, it should also be visible on the Kubernetes dashboard.
 Note that all objects relating to our application are placed in the `demo` namespace within the

@@ -24,4 +24,4 @@ data:
     management.endpoint.loggers.enabled=true
 
     # Specify profile
-    spring.profiles.active=prod
+    spring.profiles.active=dev
