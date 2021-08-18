@@ -3,7 +3,14 @@
 ## Creating the Namespace
 
 <details>
-  <summary>Show</summary>
+  <summary>Tip</summary>
+
+In order to create namespaces, you can use `kubectl create`. View `kubectl create -h` for more help.
+
+</details>
+
+<details>
+  <summary>Solution</summary>
 
 In order to create the namespace, execute:
 
@@ -16,7 +23,20 @@ kubectl create namespace helm-and-state
 ## Installing Redis
 
 <details>
-  <summary>Show</summary>
+  <summary>Tip</summary>
+
+Search for Redis Helm Charts. You should find several, such as:
+
+- https://bitnami.com/stack/redis/helm
+- https://bitnami.com/stack/redis-cluster/helm
+
+> Make sure you install the helm chart in the correct namespace! If you follow the documentation
+> found on the webpages, it might install it in another namespace than `helm-and-state`.
+
+</details>
+
+<details>
+  <summary>Solution</summary>
 
 
 We will install a Redis Sharded cluster. For this we use the Helm chart provided by Bitnami:
@@ -63,7 +83,17 @@ deployed via a Kubernetes deployment, we would use the service instead.
 ## Play with Redis
 
 <details>
-  <summary>Show</summary>
+  <summary>Tip</summary>
+
+Try opening a shell on a pod that is running Redis, and then executing `redis-cli -c` to connect to
+Redis. Once you have this open session, play and have fun.
+
+`redis-cli` doc: https://redis.io/topics/rediscli
+
+</details>
+
+<details>
+  <summary>Solution</summary>
 
 You can for instance log into a pod and execute the `redis-cli` to try writing and reading data from
 the cluster. We will use it as a Key/Value store only, but feel free to try as much as you want.
@@ -98,7 +128,20 @@ correct shard. You can see in the Redis output when such redirects happen.
 ## Change Code
 
 <details>
-  <summary>Show</summary>
+  <summary>Tip</summary>
+
+Check the following documentation: https://redis.uptrace.dev/#connecting-to-redis-server
+
+If you are using a Redis cluster, check the following documentation:
+https://redis.uptrace.dev/cluster/#redis-cluster
+
+In any case, you just need to use the appropriate client (both are already in the code) and modify
+the connection string(s).
+
+</details>
+
+<details>
+  <summary>Solution</summary>
 
 This is only meant to make you familiar with the application's behaviour. We could have just as well
 made the addresses configurable. Here you only need to change the address with which you will reach
@@ -171,7 +214,14 @@ rdb := redis.NewClusterClient(&redis.ClusterOptions{
 ## Build with Docker
 
 <details>
-  <summary>Show</summary>
+  <summary>Tip</summary>
+
+Check `docker build -h` for help. You should only need the `-t` flag.
+
+</details>
+
+<details>
+  <summary>Solution</summary>
 
 You can build your image by executing the following command in `day2/01-helm-and-state`:
 
@@ -184,7 +234,14 @@ docker build -t k3d-registry-pipeline-cluster.localhost.localhost:5000/helm-and-
 ## Push with Docker
 
 <details>
-  <summary>Show</summary>
+  <summary>Tip</summary>
+
+Use `docker push`.
+
+</details>
+
+<details>
+  <summary>Solution</summary>
 
 You can push your image by executing the following command:
 
@@ -197,13 +254,23 @@ docker push k3d-registry-pipeline-cluster.localhost.localhost:5000/helm-and-stat
 ## Deploy to Kubernetes
 
 <details>
-  <summary>Show</summary>
+  <summary>Tip</summary>
+
+</details>
+
+<details>
+  <summary>Solution</summary>
 
 </details>
 
 ## Placeholder
 
 <details>
-  <summary>Show</summary>
+  <summary>Tip</summary>
+
+</details>
+
+<details>
+  <summary>Solution</summary>
 
 </details>
