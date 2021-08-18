@@ -4,7 +4,7 @@ As we saw yesterday, state should not be managed by your own applications, but s
 externalized to other services. In this scenario we will create a small stateful application, which
 will manage its state via Redis.
 
-> Before starting, ensure you have the cluster from the pipeline yesterday started.
+> Before starting, ensure you have the cluster from the exercise yesterday up and running.
 
 Steps to follow:
 

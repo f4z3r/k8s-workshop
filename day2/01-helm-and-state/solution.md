@@ -21,7 +21,13 @@
 * [Deploy to Kubernetes](#deploy-to-kubernetes)
   * [Tips](#tips)
   * [Solution](#solution)
-* [Placeholder](#placeholder)
+* [Expose Outside the Cluster](#expose-outside-the-cluster)
+  * [Tips](#tips)
+  * [Solution](#solution)
+* [Scale the Application](#scale-the-application)
+  * [Tips](#tips)
+  * [Solution](#solution)
+* [Configure Liveness and Readiness Probes](#configure-liveness-and-readiness-probes)
   * [Tips](#tips)
   * [Solution](#solution)
 
@@ -69,7 +75,7 @@ Search for Redis Helm Charts. You should find several, such as:
 ### Solution
 
 <details>
-  <summary>Solution</summary>
+  <summary>Solution Cluster</summary>
 
 
 We will install a Redis Sharded cluster. For this we use the Helm chart provided by Bitnami:
@@ -81,7 +87,7 @@ helm install -n helm-and-state jbe-redis bitnami/redis-cluster
 ```
 
 This installs the Redis Chart with default configuration (3 shards and a single replica per master)
-in the `helm-and-state` namespace
+in the `helm-and-state` namespace.
 
 You can inspect these via the dashboard again, or by running:
 
@@ -108,6 +114,50 @@ jbe-redis-redis-cluster            ClusterIP   10.43.156.155   <none>        637
 We will not use the `jbe-redis-redis-cluster` service to talk to our Redis. This is because we need
 to provide all instance addresses to the Redis client. If we had deployed a single Redis instance
 deployed via a Kubernetes deployment, we would use the service instead.
+
+> See the exposed port (6379) in the service listing output.
+
+</details>
+
+<details>
+  <summary>Solution Single</summary>
+
+We will install a Redis single instance (non-sharded master-slave setup). For this we use the Helm
+chart provided by Bitnami: https://bitnami.com/stack/redis/helm
+
+```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install -n helm-and-state jbe-redis bitnami/redis
+```
+
+This installs the Redis Chart with default configuration (one master, 3 replicas) in the
+`helm-and-state` namespace.
+
+You can inspect these via the dashboard again, or by running:
+
+```
+$ kubectl get pods -n helm-and-state
+NAME                   READY   STATUS    RESTARTS   AGE
+jbe-redis-replicas-0   1/1     Running   0          97s
+jbe-redis-master-0     1/1     Running   0          97s
+jbe-redis-replicas-1   1/1     Running   0          65s
+jbe-redis-replicas-2   1/1     Running   0          33s
+```
+
+This also deployed services:
+
+```
+$ kubectl get service -n helm-and-state
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+jbe-redis-headless   ClusterIP   None            <none>        6379/TCP   2m28s
+jbe-redis-replicas   ClusterIP   10.43.138.227   <none>        6379/TCP   2m28s
+jbe-redis-master     ClusterIP   10.43.125.131   <none>        6379/TCP   2m28s
+```
+
+We will use the `jbe-redis-master` service to talk to our Redis. This will automatically forward
+traffic to the master. Note that in this case we could also use the pod name, as the master was
+deployed with a StatefulSet, but if this were a Deployment, which would also make more sense, the
+pod name would contain a randomized section. Therefore the Service is a safer bet.
 
 > See the exposed port (6379) in the service listing output.
 
@@ -160,6 +210,9 @@ I use the `redis-cli` flag `-c` to automatically redirect me to shards that are 
 am accessing. If you do not use it, you will get an error and need to manually connect to the
 correct shard. You can see in the Redis output when such redirects happen.
 
+> The `-c` flag is not necessary when using a non-sharded setup. However, in such a case make sure
+> you connect to the master.
+
 </details>
 
 ## Change Code
@@ -182,7 +235,7 @@ the connection string(s).
 ### Solution
 
 <details>
-  <summary>Solution</summary>
+  <summary>Solution Cluster</summary>
 
 This is only meant to make you familiar with the application's behaviour. We could have just as well
 made the addresses configurable. Here you only need to change the address with which you will reach
@@ -252,6 +305,25 @@ rdb := redis.NewClusterClient(&redis.ClusterOptions{
 
 </details>
 
+<details>
+  <summary>Solution Single</summary>
+
+Remember the Service `jbe-redis-master` which exposed port `6379`. We can therefore simply use the
+address `jbe-redis-master:6379`:
+
+```go
+rdb := redis.NewClient(&redis.Options{
+    Addr:     "jbe-redis-master:6379",
+    Password: "",
+    DB:       0,
+})
+```
+
+And I commented out the block creating a client for a Redis cluster (lines 23-34).
+
+</details>
+
+
 ## Build with Docker
 
 ### Tips
@@ -305,6 +377,68 @@ docker push k3d-registry-pipeline-cluster.localhost.localhost:5000/helm-and-stat
 ### Tips
 
 <details>
+  <summary>Tip 1</summary>
+
+We want to use a Deployment because all our servers can be treated exactly the same.
+
+Checkout the documentation: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+
+</details>
+
+<details>
+  <summary>Tip 2</summary>
+
+Use the following template and adapt the points listed below:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-http-api
+  namespace: helm-and-state
+  labels:
+    app: redis-http-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-http-api
+  template:
+    metadata:
+      labels:
+        app: redis-http-api
+    spec:
+      containers:
+      - name: server
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+```
+
+We need to adapt:
+
+- the image to use (the one we just built).
+- the container port to expose (check the code again if you don't remember which one the server
+  binds to).
+
+Then use `kubectl apply` with the `-f` flag to deploy it.
+
+> Or check the help first: `kubectl apply -h`
+
+</details>
+
+### Solution
+
+<details>
+  <summary>Solution</summary>
+
+</details>
+
+## Expose Outside the Cluster
+
+### Tips
+
+<details>
   <summary>Tip</summary>
 
 </details>
@@ -316,7 +450,23 @@ docker push k3d-registry-pipeline-cluster.localhost.localhost:5000/helm-and-stat
 
 </details>
 
-## Placeholder
+## Scale the Application
+
+### Tips
+
+<details>
+  <summary>Tip</summary>
+
+</details>
+
+### Solution
+
+<details>
+  <summary>Solution</summary>
+
+</details>
+
+## Configure Liveness and Readiness Probes
 
 ### Tips
 
