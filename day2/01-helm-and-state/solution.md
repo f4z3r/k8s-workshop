@@ -1,6 +1,33 @@
 # Solution
 
+* [Creating the Namespace](#creating-the-namespace)
+  * [Tips](#tips)
+  * [Solution](#solution)
+* [Installing Redis](#installing-redis)
+  * [Tips](#tips)
+  * [Solution](#solution)
+* [Play with Redis](#play-with-redis)
+  * [Tips](#tips)
+  * [Solution](#solution)
+* [Change Code](#change-code)
+  * [Tips](#tips)
+  * [Solution](#solution)
+* [Build with Docker](#build-with-docker)
+  * [Tips](#tips)
+  * [Solution](#solution)
+* [Push with Docker](#push-with-docker)
+  * [Tips](#tips)
+  * [Solution](#solution)
+* [Deploy to Kubernetes](#deploy-to-kubernetes)
+  * [Tips](#tips)
+  * [Solution](#solution)
+* [Placeholder](#placeholder)
+  * [Tips](#tips)
+  * [Solution](#solution)
+
 ## Creating the Namespace
+
+### Tips
 
 <details>
   <summary>Tip</summary>
@@ -8,6 +35,8 @@
 In order to create namespaces, you can use `kubectl create`. View `kubectl create -h` for more help.
 
 </details>
+
+### Solution
 
 <details>
   <summary>Solution</summary>
@@ -22,6 +51,8 @@ kubectl create namespace helm-and-state
 
 ## Installing Redis
 
+### Tips
+
 <details>
   <summary>Tip</summary>
 
@@ -34,6 +65,8 @@ Search for Redis Helm Charts. You should find several, such as:
 > found on the webpages, it might install it in another namespace than `helm-and-state`.
 
 </details>
+
+### Solution
 
 <details>
   <summary>Solution</summary>
@@ -82,6 +115,8 @@ deployed via a Kubernetes deployment, we would use the service instead.
 
 ## Play with Redis
 
+### Tips
+
 <details>
   <summary>Tip</summary>
 
@@ -91,6 +126,8 @@ Redis. Once you have this open session, play and have fun.
 `redis-cli` doc: https://redis.io/topics/rediscli
 
 </details>
+
+### Solution
 
 <details>
   <summary>Solution</summary>
@@ -127,6 +164,8 @@ correct shard. You can see in the Redis output when such redirects happen.
 
 ## Change Code
 
+### Tips
+
 <details>
   <summary>Tip</summary>
 
@@ -139,6 +178,8 @@ In any case, you just need to use the appropriate client (both are already in th
 the connection string(s).
 
 </details>
+
+### Solution
 
 <details>
   <summary>Solution</summary>
@@ -213,12 +254,16 @@ rdb := redis.NewClusterClient(&redis.ClusterOptions{
 
 ## Build with Docker
 
+### Tips
+
 <details>
   <summary>Tip</summary>
 
 Check `docker build -h` for help. You should only need the `-t` flag.
 
 </details>
+
+### Solution
 
 <details>
   <summary>Solution</summary>
@@ -233,12 +278,16 @@ docker build -t k3d-registry-pipeline-cluster.localhost.localhost:5000/helm-and-
 
 ## Push with Docker
 
+### Tips
+
 <details>
   <summary>Tip</summary>
 
 Use `docker push`.
 
 </details>
+
+### Solution
 
 <details>
   <summary>Solution</summary>
@@ -253,10 +302,14 @@ docker push k3d-registry-pipeline-cluster.localhost.localhost:5000/helm-and-stat
 
 ## Deploy to Kubernetes
 
+### Tips
+
 <details>
   <summary>Tip</summary>
 
 </details>
+
+### Solution
 
 <details>
   <summary>Solution</summary>
@@ -265,10 +318,14 @@ docker push k3d-registry-pipeline-cluster.localhost.localhost:5000/helm-and-stat
 
 ## Placeholder
 
+### Tips
+
 <details>
   <summary>Tip</summary>
 
 </details>
+
+### Solution
 
 <details>
   <summary>Solution</summary>
