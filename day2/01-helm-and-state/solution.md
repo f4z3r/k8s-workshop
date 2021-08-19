@@ -234,6 +234,7 @@ the connection string(s).
 
 </details>
 
+<details>
   <summary>Tip 2 (Secrets)</summary>
 
 Check the following documentation: https://kubernetes.io/docs/concepts/configuration/secret/
