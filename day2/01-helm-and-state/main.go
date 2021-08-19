@@ -4,6 +4,8 @@ import (
     "fmt"
     "html"
     "log"
+    "time"
+    "io/ioutil"
     "net/http"
     "github.com/go-redis/redis/v8"
     "context"
@@ -15,7 +17,7 @@ func main() {
     // TODO(@jakob): if using a single redis instance, use this client.
     // rdb := redis.NewClient(&redis.Options{
     //     Addr:     "example.com:1234", // TODO(@jakob): fill this address
-    //     Password: "",
+    //     Password: "",  // TODO(@jakob): enter the password required to connect
     //     DB:       0,
     // })
 
@@ -31,6 +33,8 @@ func main() {
             "5.example.com:7000",
             "6.example.com:7000",
         },
+        // TODO(@jakob): enter the password required to connect
+        Password: "example-secret",
     })
 
     ctx := context.TODO()
@@ -42,22 +46,32 @@ func main() {
             val, err := rdb.Get(ctx, key).Result()
             switch {
             case err == redis.Nil:
-                fmt.Fprintf(w, "key '%s' does not exist", key)
+                fmt.Fprintf(w, "key '%s' does not exist\n", key)
             case err != nil:
-                fmt.Fprintf(w, "Get failed: %s", err)
+                fmt.Fprintf(w, "Get failed: %s\n", err)
             default:
-                fmt.Fprintf(w, "%s=%s", key, val)
+                fmt.Fprintf(w, "%s=%s\n", key, val)
             }
         }
 
         if r.Method == "PUT" {
-          fmt.Fprintf(w, "setting %s to value", key)
+            data, err := ioutil.ReadAll(r.Body)
+            if err != nil {
+                http.Error(w, "failed to get request data!", 500) 
+            }
+            value := string(data)
+            err = rdb.Set(ctx, key, value, time.Duration(48*time.Hour)).Err()
+            if err != nil {
+                fmt.Fprintf(w, "Set failed: %s\n", err)
+            } else {
+                fmt.Fprintf(w, "set %s to value %s\n", key, value)
+            }
         }
     })
 
     // For liveness probe
     http.HandleFunc("/liveness", func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "live!")
+        fmt.Fprint(w, "live!\n")
     })
 
     // For readiness probe
@@ -72,7 +86,7 @@ func main() {
         if err != nil {
            http.Error(w, "not ready yet!", 500) 
         } else {
-            fmt.Fprintf(w, "ready!")
+            fmt.Fprint(w, "ready!\n")
         }
     })
 
