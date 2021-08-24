@@ -1,0 +1,8 @@
+apiVersion: v2
+name: pwn-me
+version: 0.1.0
+description: Setup to create attack surface on Kubernetes.
+maintainers:
+  - name: Jakob Beckmann
+    email: jakob.beckmann@ipt.ch
+appVersion: 0.1.0
