@@ -61,7 +61,7 @@ other programs, open shells, make network calls, perform service discovery, ...,
 ## Check Permissions
 
 <details>
-  <summary>Tip<summary>
+  <summary>Tip</summary>
 
 Permissions can be checked with `kubectl auth can-i ...`. In order to perform this you might need to
 install `kubectl` though, or figure out the exact REST API call that can perform the same (I don't
@@ -70,7 +70,7 @@ recommend trying this, it is quite some work, and installing `kubectl` takes abo
 </details>
 
 <details>
-  <summary>Solution<summary>
+  <summary>Solution</summary>
 
 We want to check what we are allowed to do with the Kubernetes API within the pod. This is always
 the first thing to check because it offers the largest attack surface.
