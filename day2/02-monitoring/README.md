@@ -217,7 +217,7 @@ Then navigate to `http://prom.localhost:9080/` in any browser. If this fails, th
 browser, execute the following and try again:
 
 ```bash
-sudo echo -e "127.0.0.1\tprom.localhost" > /etc/hosts
+sudo echo -e "127.0.0.1\tprom.localhost" >> /etc/hosts
 ```
 
 Then click on Status > Targets and you should see a list of targets that the Prometheus is scraping.
@@ -256,7 +256,7 @@ Then navigate to `http://grafana.localhost:9080/` in any browser. If this fails,
 browser, execute the following and try again:
 
 ```bash
-sudo echo -e "127.0.0.1\tgrafana.localhost" > /etc/hosts
+sudo echo -e "127.0.0.1\tgrafana.localhost" >> /etc/hosts
 ```
 
 You should land on a login page. You can login with `admin` and `admin` as the username and
@@ -306,7 +306,7 @@ Then navigate to `http://alert.localhost:9080/` in any browser. If this fails, t
 browser, execute the following and try again:
 
 ```bash
-sudo echo -e "127.0.0.1\talert.localhost" > /etc/hosts
+sudo echo -e "127.0.0.1\talert.localhost" >> /etc/hosts
 ```
 
 You might (and in all likelihood will) see a couple alerts already triggered. This is due to our
