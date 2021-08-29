@@ -3,9 +3,13 @@
 > This is quite a heavy scenario. Make sure you give your VM enough CPU and RAM to make this work.
 > Ideally I would suggest at least 16GiB of RAM and 4 vCPUs.
 
-> Solution and tips can be found under [`solution.md`][solution].
+> This scenario is less about Kubernetes, and much more on monitoring Kubernetes with Prometheus,
+> Grafana, and Alert Manager. If you know all these technologies, this scenario might be boring for
+> you, other than seeing how easy it is to set up a monitoring stack on Kubernetes, and learning a
+> bit about Custom Resource Definitions, and Kubernetes API extensions.
 
-[solution]: ./solution.md
+> Challenges can be found under [`challenges.md`][challenges]. Make sure you have completed the
+> setup explained here before proceeding.
 
 Cluster monitoring is a very important part of operating software on Kubernetes. Both applications
 and the cluster itself should be monitored at all times, such that abnormal behaviour is detected
@@ -34,6 +38,24 @@ Further reading:
 * [Overview](#overview)
 * [Installing the Entire Setup](#installing-the-entire-setup)
 * [Investigation](#investigation)
+  * [Prometheus Adapter](#prometheus-adapter)
+  * [Blackbox Exporter](#blackbox-exporter)
+  * [`kube-state-metrics`](#`kube-state-metrics`)
+  * [Prometheus Operator](#prometheus-operator)
+  * [Prometheus Instances](#prometheus-instances)
+  * [Alert Manager](#alert-manager)
+  * [Grafana](#grafana)
+  * [Node Exporters](#node-exporters)
+* [Explore Prometheus](#explore-prometheus)
+* [Explore Grafana](#explore-grafana)
+  * [Import a Dashboard](#import-a-dashboard)
+  * [Explore Metrics](#explore-metrics)
+* [Explore Alert Manager](#explore-alert-manager)
+* [API Extensions](#api-extensions)
+  * [Custom Resource Definitions](#custom-resource-definitions)
+  * [Custom Resources](#custom-resources)
+  * [Operators](#operators)
+* [Challenges](#challenges)
 
 ## Overview
 
@@ -185,30 +207,216 @@ fake in our case, since all 4 nodes are fully virtualized and not proper (virtua
 
 ## Explore Prometheus
 
+Let us first expose the Prometheus outside the cluster for easier access:
+
 ```bash
 kubectl apply -f assets/prom-ingress.yaml
 ```
 
-```
-http://prom.localhost:9080/
+Then navigate to `http://prom.localhost:9080/` in any browser. If this fails, then close your
+browser, execute the following and try again:
+
+```bash
+sudo echo -e "127.0.0.1\tprom.localhost" > /etc/hosts
 ```
 
+Then click on Status > Targets and you should see a list of targets that the Prometheus is scraping.
+All targets should be `UP`. If not, wait a little and refresh the page.
+
+Finally try to check if you can query some metrics by clicking on "Graph" and entering the following
+query:
+
+```
+kube_deployment_status_replicas_ready{namespace="kube-system"}
+```
+
+This should show that all deployments in the `kube-system` namespace have a single replica ready.
+You can check that this is consistent with the state of your cluster:
+
+```
+$ kubectl -n kube-system get deployments
+NAME                     READY   UP-TO-DATE   AVAILABLE   AGE
+coredns                  1/1     1            1           10d
+metrics-server           1/1     1            1           10d
+local-path-provisioner   1/1     1            1           10d
+traefik                  1/1     1            1           10d
+```
+
+Feel free to explore a little more if you don't know Prometheus yet!
+
 ## Explore Grafana
+
+Expose Grafana outside your cluster:
 
 ```bash
 kubectl apply -f assets/grafana-ingress.yaml
 ```
 
-```
-http://grafana.localhost:9080/
+Then navigate to `http://grafana.localhost:9080/` in any browser. If this fails, then close your
+browser, execute the following and try again:
+
+```bash
+sudo echo -e "127.0.0.1\tgrafana.localhost" > /etc/hosts
 ```
 
+You should land on a login page. You can login with `admin` and `admin` as the username and
+password. It will prompt you to provide a new password; you can continue with `admin` if you want.
+
+### Import a Dashboard
+
+We will import a very basic Kubernetes dashboard so you can see the capabilities of Grafana. Hover
+over the third icon on the left side and click on "Manage". From there click on "Import" and enter
+315 in the first text field asking for a URL or an ID. Then click on "Load". This might take a short
+time, don't stress. Once a new page appears, enter `prometheus` as the default data source in the
+last drop-down menu. Then press "Import".
+
+You should land on a dashboard that provides basic overview of the cluster resources. Note that the
+hardware metrics (CPU and Memory) probably strongly differ from your expectation. This is simply
+because of the very high level of virtualization of our setup.
+
+You can repeat the process for dashboard ID `13838` to get another dashboard with more information
+about Kubernetes itself.
+
+### Explore Metrics
+
+Then go on the "Explore" tab (fourth on the left side) and enter `prometheus` as the data source at
+the very top of the screen.
+
+Now you can graph your cluster resources. For instances, enter the following query into the metrics
+field:
+
+```
+rate(container_cpu_usage_seconds_total{namespace="monitoring", container="alertmanager"}[3m])
+```
+
+A nice graph should appear to show you the change rage (over 3 minutes) of the CPU usage of all
+`alertmanager` containers running the `monitoring` namespace!
+
+Feel free to explore some more.
+
 ## Explore Alert Manager
+
+Expose the Alert Manager outside the cluster:
 
 ```bash
 kubectl apply -f assets/alert-ingress.yaml
 ```
 
+Then navigate to `http://alert.localhost:9080/` in any browser. If this fails, then close your
+browser, execute the following and try again:
+
+```bash
+sudo echo -e "127.0.0.1\talert.localhost" > /etc/hosts
 ```
-http://alert.localhost:9080/
+
+You might (and in all likelihood will) see a couple alerts already triggered. This is due to our
+setup being "non-conventional" and therefore already the base alerts from Alert Manager are
+triggered.
+
+There is little to explore in Alert Manager other than the alerts that are triggered. We will create
+our own alerts soon, which should then appear there.
+
+If you want, feel free to explore.
+
+## API Extensions
+
+The main point of this scenario is to get you familiar with Kubernetes API extensions by the means
+of monitoring. API extensions are composed of three major elements:
+
+- Custom Resource Definitions,
+- Custom Resources,
+- Operators.
+
+### Custom Resource Definitions
+
+Custom Resource Definitions (or CRDs) allow to define how a Kubernetes API extension is going to
+look like. We will not look at how to define them as it is out of scope for this scenario, but they
+essentially define the structure of your YAML files for the Custom Resources. For instance,
+somewhere in the Kubernetes API, there is a configuration that defines what are legal fields in the
+Deployment YAML configuration. Custom Resource Definitions do the same, but for user-defined
+resources.
+
+To see what API extensions (CRDs) are installed on your cluster:
+
 ```
+$ kubectl get crds
+NAME                                        CREATED AT
+addons.k3s.cattle.io                        2021-08-18T16:54:44Z
+helmcharts.helm.cattle.io                   2021-08-18T16:54:44Z
+helmchartconfigs.helm.cattle.io             2021-08-18T16:54:44Z
+tlsoptions.traefik.containo.us              2021-08-18T16:55:29Z
+middlewares.traefik.containo.us             2021-08-18T16:55:29Z
+traefikservices.traefik.containo.us         2021-08-18T16:55:29Z
+ingressroutes.traefik.containo.us           2021-08-18T16:55:29Z
+ingressrouteudps.traefik.containo.us        2021-08-18T16:55:29Z
+serverstransports.traefik.containo.us       2021-08-18T16:55:29Z
+tlsstores.traefik.containo.us               2021-08-18T16:55:29Z
+ingressroutetcps.traefik.containo.us        2021-08-18T16:55:29Z
+alertmanagerconfigs.monitoring.coreos.com   2021-08-29T15:01:57Z
+alertmanagers.monitoring.coreos.com         2021-08-29T15:01:57Z
+podmonitors.monitoring.coreos.com           2021-08-29T15:01:57Z
+probes.monitoring.coreos.com                2021-08-29T15:01:57Z
+prometheuses.monitoring.coreos.com          2021-08-29T15:01:57Z
+prometheusrules.monitoring.coreos.com       2021-08-29T15:01:57Z
+servicemonitors.monitoring.coreos.com       2021-08-29T15:01:57Z
+thanosrulers.monitoring.coreos.com          2021-08-29T15:01:57Z
+```
+
+Now we could for instance look at the `prometheuses.monitoring.coreos.com` resources in the cluster:
+
+```
+$ kubectl -n monitoring get prometheuses
+NAME   VERSION   REPLICAS   AGE
+k8s    2.29.1    2          3h6m
+```
+
+This shows the `k8s` Prometheus definition that is used to configure the deployment of the
+Prometheus we just accessed.
+
+### Custom Resources
+
+Custom Resources are instances of CRDs. In other words, they are a user-defined resource that has
+the structure defined within a CRD. The `k8s` Prometheus instance is an example of it. You can get
+its YAML configuration if you are interested in it, and see what is configured in this case:
+
+```
+$ kubectl -n monitoring get prometheus k8s -o yaml
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  creationTimestamp: "2021-08-29T15:05:00Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/component: prometheus
+    ...
+```
+
+Note the `apiVersion` which is a custom version defined by the provider of the Prometheus CRD, and
+the `kind` which defines what resource kind this resource defines. In this case it is a `Prometheus`
+configuration. Note that the `monitoring.coreos.com` provider defines much more than just the
+`Prometheus` resource kind (`PrometheusRules`, etc).
+
+### Operators
+
+While defining CRDs and Custom Resources is all well and nice, the Kubernetes API yet only knows
+their structure, not what to do with them. This is where operators come into play. Operators are
+software components that register to the Kubernetes API and tell it that they can handle the
+`Prometheus` resource for instance. The Kubernetes API server will then notify the operator whenever
+something happens with a `Prometheus` resource. The operator can then take actions with whatever
+logic it desires. Typically operators connect back to the Kubernetes API to perform their
+operations. For instance in the `Prometheus` case, the operator will create Deployments, ConfigMaps,
+Secrets, Services, etc according to the definition with in the `Prometheus` custom resource.
+
+However, operators are free to do whatever other action if they desire. In theory an operator could
+provision the `Prometheus` on a completely different cluster, or even on VMs in AWS by connecting to
+that API if it wanted. That is the beauty of the operators: they are free to implement any logic
+that is desired. That makes them extremely powerful, and a heavily used feature of Kubernetes in
+production environments.
+
+## Challenges
+
+Now turn to [`challenges.md`][challenges] to get some challenges on how to monitor your Kubernetes
+cluster and learn how to perform PromQL queries to check the state of the cluster, as well as
+defining proper alerts.
+
+[challenges]: ./challenges.md
