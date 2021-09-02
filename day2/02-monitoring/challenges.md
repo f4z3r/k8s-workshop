@@ -5,10 +5,11 @@
   * [1. Dashboard Redis Setup](#1.-dashboard-redis-setup)
   * [2. Change Redis Scraping Interval](#2.-change-redis-scraping-interval)
   * [3. Modify the Alerting For the Our Prometheus](#3.-modify-the-alerting-for-the-our-prometheus)
-  * [4. Define an Alert for Redis](#4.-define-an-alert-for-redis)
+  * [4. Define a Simple Alert for Redis](#4.-define-a-simple-alert-for-redis)
   * [5. Setup a Dashboard for MongoDB](#5.-setup-a-dashboard-for-mongodb)
-  * [6. Define a ServiceMonitor for MongoDB](#6.-define-a-servicemonitor-for-mongodb)
-  * [7. Define an Alert for MongoDB](#7.-define-an-alert-for-mongodb)
+  * [6. Manually Retrieve Metrics for MongoDB](#6.-manually-retrieve-metrics-for-mongodb)
+  * [7. Define a ServiceMonitor for MongoDB](#7.-define-a-servicemonitor-for-mongodb)
+  * [8. Define an Alert for MongoDB](#8.-define-an-alert-for-mongodb)
 
 ## Setup
 
@@ -211,12 +212,249 @@ for, until the alert it triggered. Change its value to `10m` and apply the YAML 
 
 </details>
 
-### 4. Define an Alert for Redis
+### 4. Define a Simple Alert for Redis
+
+Define an alert that triggers when Redis is not up for more than 1 minute. Call the alert
+`RedisDown`.
+
+Test that the alert is working.
+
+<details>
+  <summary>Tip</summary>
+
+Use a PrometheusRule resource and the `redis_up` metric.
+
+</details>
+
+<details>
+  <summary>Solution</summary>
+
+We will create a new PrometheusRule resource:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: redis-rules
+  namespace: monitoring
+spec:
+  groups:
+  - name: redis
+    rules:
+    ...
+```
+
+You can get the basic structure for the PrometheusRule either from looking at the CRD, or by simply
+getting an existing one in the cluster and adapting it. I defined the group as `redis` since this
+file will contain Redis alerts.
+
+Now onto the alert. You can use Grafana to explore the Redis metrics, or Google what metrics the
+`redis-exporter:1.26.0-debian-10-r5` image exposes. Either way, we are interested in the `redis_up`
+metric. This metric returns `1` when the Redis instance is reachable, and `0` when it is not.
+
+Therefore the expression we want to check is:
+
+```promql
+redis_up == 0
+```
+
+This makes our alert:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: redis-rules
+  namespace: monitoring
+spec:
+  groups:
+  - name: redis
+    rules:
+    - alert: RedisDown
+      expr: redis_up == 0
+      for: 1m
+      annotations:
+        description: Redis down ({{ $labels.instance }}).
+        summary: The Redis instance {{ $labels.instance }} is down.
+      labels:
+        severity: critical
+```
+
+> Note that the annotations and labels are not required. I added them since it tends to be nice to
+> have a little more information in an alert.
+
+Apply this configuration with `kubectl apply -f`.
+
+Onto testing. We will need to take down the Redis instance without taking down the metrics exporter
+for it. Therefore we cannot just kill a pod. By opening a shell in a Redis pod, we can see that the
+Redis server runs as PID 1:
+
+```
+I have no name!@redis-service-redis-cluster-0:/$ ps auxww
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+1001           1  0.1  0.0  58612  8192 ?        Ssl  17:25   0:02 redis-server 0.0.0.0:6379 [cluster]
+1001        5227  0.0  0.0   3872  3104 pts/0    Ss   17:47   0:00 bash
+1001        5251  0.0  0.0   7644  2680 pts/0    R+   17:48   0:00 ps auxww
+```
+
+This is likely to be stable, as it means it is the entrypoint for the container. You can try killing
+it directly, in the shell (`kill 1`). Unfortunately, Kubernetes self-healing will bring the
+container back up wayyyyy faster than in one minute. So we will need to create a loop that
+continuously kills the process:
+
+```
+while true; do
+  kubectl -n monitoring exec redis-service-redis-cluster-0 -c redis-service-redis-cluster -- kill 1
+  sleep 1;
+done
+```
+
+This will return errors as it often cannot connect to the container while it is restarting. But you
+should see that the pod is no longer ready. You can see the effect in Grafana in the "Explore" tab,
+checking for the `redis_up` metric. You should see that a value as dropped to 0.
+
+Now go onto the Alert Manager URL (`http://alert.localhost:9080`). There you should see your alert
+appearing after a minute has passed.
+
+> Typically Alert Manager will be configured so that it send an Email or an SMS to responsible
+> people when critical alerts are triggered. This is not the case here because it is not an "Alert
+> Manager Tutorial". However, that would be the beauty of it.
+
+Kill the loop with a `^C` (Control-C) signal. Now note that the pod might not start straight away:
+
+```
+$ kubectl -n monitoring get pods
+...
+redis-service-redis-cluster-0            1/2     CrashLoopBackOff   7          21h
+...
+```
+
+This is because Kubernetes will (by default) back off from restarting containers that continuously
+crash. The idea is not to waste resources on pods/containers that seem fully broken. It is important
+that Kubernetes does this so that the API cannot be overloaded by deploying buggy images (would be
+equivalent to a DoS attack).
+
+After the pod has fully restarted (might take some time, depending on how long you were killing it
+for), the alert in Alert Manager should disappear.
+
+</details>
 
 ### 5. Setup a Dashboard for MongoDB
 
-### 6. Define a ServiceMonitor for MongoDB
-
-### 7. Define an Alert for MongoDB
+Install a basic dashboard for Redis from the following URL onto your Grafana:
 
 https://grafana.com/grafana/dashboards/2583
+
+The dashboard will be empty, why?
+
+<details>
+  <summary>Solution</summary>
+
+Click onto Dashboards > Manage. Then click "Import", enter the ID `2583` and "Load". Once you reach
+the next screen, enter `prometheus` as the data source and click "Import".
+
+The reason the dashboard is empty is because we have not installed a ServiceMonitor for the deployed
+MongoDB instance, so the metrics are not scraped by Prometheus and thus not available to Grafana.
+
+</details>
+
+### 6. Manually Retrieve Metrics for MongoDB
+
+Try to get metrics for MongoDB without going via Prometheus, Grafana, or Alert Manager. Get them
+directly from where-ever they are provided.
+
+<details>
+  <summary>Tip</summary>
+
+MongoDB follows the standard _sidecar_ pattern. The sidecar pattern is when a pod contains several
+containers, the main one performing the main work we desire, and several so called "sidecars" which
+either support the main container in its work, or provide information about it. Investigate the
+containers of the MongoDB pod, and go on from there.
+
+</details>
+
+<details>
+  <summary>Solution</summary>
+
+The MongoDB pod follows the sidecar pattern, with the metrics exporter running as a separate
+container in the pod, providing metrics about the MongoDB instance running in the main container.
+First find the MongoDB pod:
+
+```
+$ kubectl -n monitoring get pods
+NAME                                     READY   STATUS    RESTARTS   AGE
+...
+mongo-service-mongodb-6495568667-zvj4q   2/2     Running   2          21h
+...
+```
+
+With the pod name, you can describe it to find more information about it:
+
+```
+$ kubectl -n monitoring describe pod mongo-service-mongodb-6495568667-zvj4q
+Name:         mongo-service-mongodb-6495568667-zvj4q
+Namespace:    monitoring
+...
+Containers:
+  mongodb:
+    Image:          docker.io/bitnami/mongodb:4.4.8-debian-10-r24
+    Image ID:       docker.io/bitnami/mongodb@sha256:57e4abfe050b0546ccdfeb37320d9f2017fea9108a8a310bc29850b0e5516f95
+    ...
+  metrics:
+    Image:         docker.io/bitnami/mongodb-exporter:0.11.2-debian-10-r260
+    Image ID:      docker.io/bitnami/mongodb-exporter@sha256:194066daf943bf03bd8ffa637e8c5250e7d0c41a4ce6015502fae4a2fd1e48ee
+    Port:          9216/TCP
+    ...
+```
+
+You can see there are two containers, one of which called metrics, which exposes the port 9216.
+Interesting... Let us open a shell in said container and try to call that endpoint:
+
+```
+$ kubectl -n monitoring exec -it mongo-service-mongodb-6495568667-zvj4q -c metrics -- bash
+I have no name!@mongo-service-mongodb-6495568667-zvj4q:/opt/bitnami/mongodb-exporter$ curl localhost:9216
+<html>
+<head>
+        <title>MongoDB exporter</title>
+</head>
+<body>
+        <h1>MongoDB exporter</h1>
+        <p><a href="/metrics">Metrics</a></p>
+</body>
+</html>
+```
+
+Ok, we seem to have reached what we want, but got no metrics. Lets try the path returned in the
+"Metrics" link (`/metrics`):
+
+```
+I have no name!@mongo-service-mongodb-6495568667-zvj4q:/opt/bitnami/mongodb-exporter$ curl localhost:9216/metrics
+# HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 2.3638e-05
+go_gc_duration_seconds{quantile="0.25"} 3.8077e-05
+go_gc_duration_seconds{quantile="0.5"} 6.448e-05
+go_gc_duration_seconds{quantile="0.75"} 0.000116003
+go_gc_duration_seconds{quantile="1"} 0.000269253
+go_gc_duration_seconds_sum 0.0015824
+go_gc_duration_seconds_count 19
+# HELP go_goroutines Number of goroutines that currently exist.
+# TYPE go_goroutines gauge
+...
+```
+
+Done, `#success`.
+
+</details>
+
+### 7. Define a ServiceMonitor for MongoDB
+
+<details>
+  <summary>Tip</summary>
+
+Use a PrometheusRule resource and the `redis_up` metric.
+
+</details>
+
+### 8. Define an Alert for MongoDB
+
