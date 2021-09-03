@@ -449,12 +449,218 @@ Done, `#success`.
 
 ### 7. Define a ServiceMonitor for MongoDB
 
+Create a ServiceMonitor to configure Prometheus to scrape the MongoDB service every 5s.
+
 <details>
   <summary>Tip</summary>
 
-Use a PrometheusRule resource and the `redis_up` metric.
+Base yourself on other ServiceMonitors (for instance the one from Redis), and make sure you
+configure the label selectors to match labels of the MongoDB service.
+
+</details>
+
+<details>
+  <summary>Solution</summary>
+
+We will base ourselves on the ServiceMonitor from Redis:
+
+```bash
+kubectl -n monitoring get servicemonitor redis-service-redis-cluster -o yaml > /tmp/sm.yaml
+```
+
+This gives:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-service-redis-cluster
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 10s
+    port: metrics
+  namespaceSelector:
+    matchNames:
+    - monitoring
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: metrics
+      app.kubernetes.io/instance: redis-service
+      app.kubernetes.io/name: redis-cluster
+```
+
+Now we need to make sure that the port provided in the endpoint is correct, adapt the scraping
+interval, and update the label selector to use the service from MongoDB.
+
+Let us check the service from MongoDB:
+
+```
+$ kubectl -n monitoring get service
+NAME                                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+...
+mongo-service-mongodb-metrics          ClusterIP   10.43.62.72     <none>        9216/TCP                     32h
+mongo-service-mongodb                  ClusterIP   10.43.36.88     <none>        27017/TCP                    32h
+...
+```
+
+You can see that there are two services, one of which has `metrics` in the name and exposes the port
+we used in the last challenge to obtain the metrics. We will use this one. Unfortunately we have to
+use the port name, and not number, in the ServiceMonitor. We can find this in the Service
+definition.
+
+Let us retrieve the labels of the service, and the name of the port:
+
+```
+$ kubectl -n monitoring get service mongo-service-mongodb-metrics -o yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: mongo-service
+    meta.helm.sh/release-namespace: monitoring
+    prometheus.io/path: /metrics
+    prometheus.io/port: "9216"
+    prometheus.io/scrape: "true"
+  creationTimestamp: "2021-09-01T20:29:44Z"
+  labels:
+    app.kubernetes.io/component: metrics
+    app.kubernetes.io/instance: mongo-service
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: mongodb
+    helm.sh/chart: mongodb-10.23.13
+  name: mongo-service-mongodb-metrics
+  namespace: monitoring
+  resourceVersion: "68139"
+  ...
+
+  ...
+    ports:
+  - name: http-metrics
+    port: 9216
+    protocol: TCP
+    targetPort: metrics
+
+```
+
+Lets use the following labels:
+
+```yaml
+app.kubernetes.io/component: metrics
+app.kubernetes.io/instance: mongo-service
+app.kubernetes.io/name: mongodb
+```
+
+As they are the most likely to uniquely determine the service. This makes our ServiceMonitor:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mongodb-monitor
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 5s
+    port: http-metrics
+  namespaceSelector:
+    matchNames:
+    - monitoring
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: metrics
+      app.kubernetes.io/instance: mongo-service
+      app.kubernetes.io/name: mongodb
+```
+
+Apply the ServiceMonitor with `kubectl apply -f` and check that MongoDB appears as a scraping target
+in Prometheus after some small time. After it has been listed as a target in Prometheus, you can
+start exploring metrics in Grafana. You should also see data appear on the Dashboard you imported in
+a previous challenge, since now the metrics are available.
 
 </details>
 
 ### 8. Define an Alert for MongoDB
 
+Create an alert to trigger immediately when the MongoDB service no longer serves metrics (the
+exporter is not responsive). Typically people write alerts based on metric conditions, but forget to
+write alerts for the scenario where there are no more metrics from a service at all.
+
+<details>
+  <summary>Tip 1</summary>
+
+You should use metrics from Prometheus itself provides regarding targets. This is not strictly
+necessary but it is more elegant.
+
+</details>
+
+<details>
+  <summary>Tip 2</summary>
+
+You will need to specify a PromQL filter to only consider the MongoDB metrics.
+
+</details>
+
+<details>
+  <summary>Tip 3</summary>
+
+You will need to use the `absent` function from PromQL to trigger when some metric is missing.
+
+</details>
+
+<details>
+  <summary>Solution</summary>
+
+While you could check for the presence of any metrics served by MongoDB, this is not very stable, as
+exporters might choose to stop serving some metrics that either make no sense for the current state
+of the cluster, or because they have no changed for some time (in case of rates). We will use the
+builtin `up` metric from Prometheus, that provides information on whether scraping targets are
+responding.
+
+To filter it for the MongoDB service, we will use the following PromQL query:
+
+```promql
+absent(up{service="mongo-service-mongodb-metrics"})
+```
+
+> Note the use of the `absent` function to trigger only when the metric is not available.
+
+Then we can create a PrometheusRule object just like in challenge 4, and set the `for:` to `0m` so
+that it triggers directly:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mongodb-rules
+  namespace: monitoring
+spec:
+  groups:
+  - name: mongodb
+    rules:
+    - alert: MongoDBMetricsMissing
+      expr: absent(up{service="mongo-service-mongodb-metrics"})
+      for: 0m
+      annotations:
+        description: MongoDB metrics are missing ({{ $labels.pod }}).
+        summary: The Redis metrics for pod {{ $labels.pod }} are not being served.
+      labels:
+        severity: critical
+```
+
+Once you have applied this PrometheusRule, you can test it by repeatedly killing the MongoDB
+container, or simply scaling the Deployment down to 0.
+
+The alert should trigger immediately in Alert Manager.
+
+Then scale the Deployment back to 1 and watch the alert disappear.
+
+> Note that either might not be fully immediate, since you only scrape metrics every 5 seconds.
+> Therefore it might take up to 5 seconds to notice both the fact that the metrics are missing, and
+> that they might have reappeared. It is important to keep these dependencies in mind when designing
+> your alerts, as scraping intervals can have massive impacts on your response time in more extreme
+> scenarios. Typical scraping times are between 10 and 30 seconds, but if you use Prometheus
+> federation with a large number of metrics, you might not be able to scrape more often than every
+> couple of minutes.
+
+</details>
