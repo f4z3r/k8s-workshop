@@ -435,7 +435,7 @@ Check `docker build -h` for help. You should only need the `-t` flag.
 You can build your image by executing the following command in `day2/01-helm-and-state`:
 
 ```bash
-docker build -t k3d-registry-pipeline-cluster.localhost.localhost:5000/helm-and-state:0.1.0 .
+docker build -t k3d-registry-pipeline-cluster.localhost:5000/helm-and-state:0.1.0 .
 ```
 
 </details>
@@ -459,7 +459,7 @@ Use `docker push`.
 You can push your image by executing the following command:
 
 ```bash
-docker push k3d-registry-pipeline-cluster.localhost.localhost:5000/helm-and-state:0.1.0
+docker push k3d-registry-pipeline-cluster.localhost:5000/helm-and-state:0.1.0
 ```
 
 </details>
