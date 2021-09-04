@@ -266,7 +266,7 @@ end
 function create_cluster(name, registry)
   local cmd = "k3d registry create %s.localhost --port 5000"
   local worked = os.execute(string.format(cmd, registry))
-  cmd = 'k3d cluster create %s -a 3 -s 1 --api-port 0.0.0.0:6550 -p "9080:80@loadbalancer" --registry-use k3d-%s.localhost:5000'
+  cmd = 'k3d cluster create %s -a 3 -s 1 -i rancher/k3s:v1.21.1-k3s1 --api-port 0.0.0.0:6550 -p "9080:80@loadbalancer" --registry-use k3d-%s.localhost:5000'
   worked = worked and os.execute(string.format(cmd, name, registry))
   worked = worked and os.execute("sleep 10s")
   worked = worked and os.execute("kubectl create ns "..k8s_ns)
