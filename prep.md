@@ -13,7 +13,8 @@ installation of the virtual machine. Note that the install can be "minimal", no 
 Office Tools, etc.
 
 > Please do not make the VM too small. A decent amount of software will run inside it. I recommend
-> at least 2 vCPUs and 8GiB of RAM minimum.
+> at least 2 vCPUs and 8GiB of RAM minimum. Moreover, please provide the VM with 30GiB+ of storage.
+> We will be running a lot of software within this VM, so we need the resources for it.
 
 [0]: https://www.virtualbox.org/
 [1]: https://ubuntu.com/download/desktop
