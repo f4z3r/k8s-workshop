@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sb-demo
+  name: sb-demo-svc
+  namespace: demo
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: sb-demo
+  type: ClusterIP

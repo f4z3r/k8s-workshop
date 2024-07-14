@@ -1,14 +1,17 @@
 # IPT Workshop Climb&Code Day 1
 
-* [Preparation](#preparation)
-* [Workshop Overview](#workshop-overview)
-  * [Docker](#docker)
-  * [Pipeline](#pipeline)
-  * [Kubernetes](#kubernetes)
-    * [Resilience](#resilience)
-    * [Logging](#logging)
-    * [Debugging](#debugging)
-    * [Configuration](#configuration)
+<!--toc:start-->
+- [IPT Workshop Climb&Code Day 1](#ipt-workshop-climbcode-day-1)
+  - [Preparation](#preparation)
+  - [Workshop Overview](#workshop-overview)
+    - [Docker](#docker)
+    - [Infrastructure](#infrastructure)
+    - [Kubernetes](#kubernetes)
+      - [Resilience](#resilience)
+      - [Logging](#logging)
+      - [Debugging](#debugging)
+      - [Configuration](#configuration)
+<!--toc:end-->
 
 ---
 
@@ -24,7 +27,7 @@ environment up and running and be ready on the day of the workshop.
 In case you have not ready, please clone this repository to the VM:
 
 ```bash
-git clone https://github.com/jakobbeckmann/k8s-workshop.git
+git clone https://github.com/f4z3r/k8s-workshop.git
 ```
 
 And initialize the git submodules to obtain our demo application:
@@ -84,12 +87,24 @@ To stop the container, simply press `Ctrl-c` in the terminal session where you l
 
 [1]: ./Dockerfile
 
-### Pipeline
+### Infrastructure
 
-Prepare the infrastructure for the pipeline by running:
+First, validate that nothing is running on ports:
+
+- 5000
+- 6550
+- 9080
+
+with `ss -tlnp`.
+
+Then, prepare the infrastructure by running:
 
 ```bash
-./pipeline.lua prep
+k3d registry create erfa.localhost --port 5000
+k3d cluster create erfa -a 3 -s 1 -i rancher/k3s:v1.20.7-k3s1 --api-port 0.0.0.0:6550 -p 9080:80@loadbalancer --registry-use k3d-erfa.localhost:5000
+# wait for cluster to come online
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml
+kubectl apply -f ./manifests/dash/
 ```
 
 Once this is done, launch a proxy using:
@@ -108,7 +123,7 @@ Once you are on this page, you will be required to log in. Select the "token" op
 token returned from the following command into the text field:
 
 ```bash
-./pipeline.lua token
+bash ./token.sh
 ```
 
 Play around with the dashboard and investigate the interesting information it can provide you. Note
@@ -116,16 +131,20 @@ that we have not yet deployed any application.
 
 ### Kubernetes
 
-We will now deploy our application via a pipeline to see how easily a SpringBoot application can be
-run and how resilient it is:
+We will now deploy our application to see how easily a SpringBoot application can be run and how
+resilient it is:
 
 ```bash
-./pipeline.lua
+# build and push the docker image to a shared registry
+docker build -t k3d-erfa.localhost:5000/infra-cluster:infra -f ./infra-dockerfile ./
+docker push k3d-erfa.localhost:5000/infra-cluster:infra
+# deploy everything into our cluster
+kubectl create ns demo
+kubectl apply -f ./manifests/app/
 ```
 
 Once the command above has completed, the application will be deployed with three replicas on our
-cluster. Networking is configured by the pipeline so you can access the API via the following
-endpoint:
+cluster. Networking is configured already so you can access the API via the following endpoint:
 
 ```
 sb-demo.localhost:9080/customers/1
@@ -136,9 +155,8 @@ sb-demo.localhost:9080/customers/1
 >
 >     127.0.0.1   sb-demo.localhost
 
-After the pipeline has deployed everything, it should also be visible on the Kubernetes dashboard.
-Note that all objects relating to our application are placed in the `demo` namespace within the
-cluster.
+After everything is deployed, it should also be visible on the Kubernetes dashboard. Note that all
+objects relating to our application are placed in the `demo` namespace within the cluster.
 
 #### Resilience
 
@@ -210,8 +228,7 @@ kubectl -n demo exec -it pod/sb-demo-deploy-79b8db5d74-nm4cr -- bash
 
 #### Configuration
 
-Our pipeline configures several things in our pipeline that are external to the containers being
-run:
+Our deployment configures several things in that are external to the containers being run:
 
 - A (dummy) configuration file mounted at `/app/config/application.properties`.
 - A (dummy) JDBC connection URL stored in an environment variable `JDBC_URL`.
@@ -229,16 +246,16 @@ kubectl -n demo get secret/sb-demo-db-creds -o yaml
 > Note that the information from the secret is base64 encoded, so you would need to decode it before
 > being able to read it.
 
-The dummy configuration file is however being deployed as part of the pipeline. It can be found
-under [`./configmap.yaml`][configmap]. Note that this is a Kubernetes object, but it only contains
-the configuration for a SpringBoot application. The contents are then mounted inside the containers
-as we saw with the first command we executed within a pod.
+The dummy configuration file is however being deployed as part of the setup before. It can be found
+under [`./manifests/app/configmap.yaml`][configmap]. Note that this is a Kubernetes object, but it
+only contains the configuration for a SpringBoot application. The contents are then mounted inside
+the containers as we saw with the first command we executed within a pod.
 
 Kubernetes manages these resources dynamically, therefore you can change any value inside the
-[`./configmap.yaml`][configmap] and rerun the pipeline with:
+[`./manifests/app/configmap.yaml`][configmap] and redeploy with:
 
 ```bash
-./pipeline.lua
+kubectl apply -f ./manifests/app/
 ```
 
 > Note that it might take some time before the changes can be observed. Kubernetes is not
@@ -254,4 +271,4 @@ kubectl -n demo exec pod/sb-demo-deploy-79b8db5d74-nm4cr -- cat /app/config/appl
 
 Note that the pods were not restarted to get the configuration updated!
 
-[configmap]: ./configmap.yaml
+[configmap]: ./manifests/app/configmap.yaml

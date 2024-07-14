@@ -435,7 +435,7 @@ Check `docker build -h` for help. You should only need the `-t` flag.
 You can build your image by executing the following command in `day2/01-helm-and-state`:
 
 ```bash
-docker build -t k3d-registry-pipeline-cluster.localhost:5000/helm-and-state:0.1.0 .
+docker build -t k3d-erfa.localhost:5000/helm-and-state:0.1.0 .
 ```
 
 </details>
@@ -459,7 +459,7 @@ Use `docker push`.
 You can push your image by executing the following command:
 
 ```bash
-docker push k3d-registry-pipeline-cluster.localhost:5000/helm-and-state:0.1.0
+docker push k3d-erfa.localhost:5000/helm-and-state:0.1.0
 ```
 
 </details>
@@ -546,7 +546,7 @@ spec:
     spec:
       containers:
       - name: server
-        image: k3d-registry-pipeline-cluster.localhost:5000/helm-and-state:0.1.0
+        image: k3d-erfa.localhost:5000/helm-and-state:0.1.0
         ports:
         - containerPort: 8080
 ```
@@ -817,7 +817,7 @@ spec:
         app: redis-http-api
     spec:
       containers:
-      - image: k3d-registry-pipeline-cluster.localhost:5000/helm-and-state:0.1.0
+      - image: k3d-erfa.localhost:5000/helm-and-state:0.1.0
         imagePullPolicy: IfNotPresent
         name: server
         livenessProbe:

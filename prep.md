@@ -1,5 +1,17 @@
 # Workshop Preparation
 
+In order to participate in this workshop you should be able to provision a local Kubernetes cluster
+and interact with it. In order to do this, you will need the following tools installed and working
+correctly:
+
+- `git`
+- `docker`
+- `k3d`
+- `kubectl`
+- `helm`
+
+You can either install these tools on your setup, or install a VM and install them in there.
+
 ## VM Setup
 
 We will use Ubuntu Focal to perform the workshop. In order to be able to have consistent
@@ -30,7 +42,7 @@ Once the VM is installed and running, please update the software on the VM:
 ```bash
 sudo apt update
 sudo apt upgrade -y
-sudo apt install lua5.3 git -y
+sudo apt install git -y
 ```
 
 Then perform the following steps to install the required software.
@@ -88,10 +100,10 @@ sudo apt install curl
 curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
 ```
 
-And test the installation by creating a `demo` cluster:
+And test the installation by creating a demo cluster:
 
 ```bash
-k3d cluster create demo
+k3d cluster create demo -i rancher/k3s:v1.20.7-k3s1
 ```
 
 Try to access this via `kubectl`:
@@ -105,7 +117,7 @@ which should return a single node such as:
 ```
 ubuntu@ipt-demo:~$ kubectl get nodes
 NAME                STATUS   ROLES                  AGE   VERSION
-k3d-demo-server-0   Ready    control-plane,master   18s   v1.20.5+k3s1
+k3d-demo-server-0   Ready    control-plane,master   18s   v1.20.7+k3s1
 ```
 
 Check that `helm` finds some releases that are installed by default in our cluster setup.
