@@ -101,7 +101,7 @@ Then, prepare the infrastructure by running:
 
 ```bash
 k3d registry create erfa.localhost --port 5000
-k3d cluster create erfa -a 3 -s 1 -i rancher/k3s:v1.20.7-k3s1 --api-port 0.0.0.0:6550 -p 9080:80@loadbalancer --registry-use k3d-erfa.localhost:5000
+k3d cluster create erfa -a 3 -s 1 -i rancher/k3s:v1.21.7-k3s1 --api-port 0.0.0.0:6550 -p 9080:80@loadbalancer --registry-use k3d-erfa.localhost:5000
 # wait for cluster to come online
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml
 kubectl apply -f ./manifests/dash/
