@@ -103,7 +103,7 @@ curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
 And test the installation by creating a demo cluster:
 
 ```bash
-k3d cluster create demo -i rancher/k3s:v1.20.7-k3s1
+k3d cluster create demo -i rancher/k3s:v1.21.7-k3s1
 ```
 
 Try to access this via `kubectl`:
@@ -129,7 +129,29 @@ traefik         kube-system     1               2021-06-06 15:46:19.258668874 +0
 traefik-crd     kube-system     1               2021-06-06 15:46:18.759570934 +0000 UTC deployed        traefik-crd-9.18.2
 ```
 
-Then delete the cluster:
+Finally, also check whether the ingress load-balancers work properly:
+
+```bash
+kubectl get pods -A -l app=svclb-traefik
+```
+
+See below a sample output when it is failing, with a crash loop.
+
+```
+NAMESPACE     NAME                  READY   STATUS             RESTARTS   AGE
+kube-system   svclb-traefik-5gzbj   0/2     CrashLoopBackOff   8          100s
+```
+
+If it fails, try to run:
+
+```bash
+sudo modprobe ip_tables
+```
+
+And either delete the failed pods to redeploy them, or delete the entire cluster (see below) and
+redeploy it. It should then work.
+
+If everything works, delete the cluster, as we will create a new cluster during the workshop:
 
 ```bash
 k3d cluster stop demo
