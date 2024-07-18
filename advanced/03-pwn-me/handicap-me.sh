@@ -10,7 +10,7 @@ fi
 
 # idempotence check
 if [ -f ${HOME}/.kube/config.bak ]; then
-  echo "You already run this script, aborting."
+  echo "You already ran this script, aborting."
   exit 1
 fi
 

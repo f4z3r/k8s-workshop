@@ -432,7 +432,7 @@ Check `docker build -h` for help. You should only need the `-t` flag.
 <details>
   <summary>Solution</summary>
 
-You can build your image by executing the following command in `day2/01-helm-and-state`:
+You can build your image by executing the following command in `advanced/01-helm-and-state`:
 
 ```bash
 docker build -t k3d-erfa.localhost:5000/helm-and-state:0.1.0 .

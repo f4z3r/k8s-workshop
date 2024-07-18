@@ -7,18 +7,20 @@ workshop.
 
 [prep.md]: ./prep.md
 
-## Day 1
+## Beginner
 
-For the practical part of the first day, you will find all that is needed in [`day1`][day1].
+If you have no experience (or very little) with Docker and Kubernetes, feel free to go through the
+exercises in [`beginner`][beginner].
 
-[day1]: ./day1/
+[beginner]: ./beginner/
 
-## Day 2
+## Advanced
 
-For the practical part of the second day, you will find all that is needed in [`day2`][day2].
+For advanced exercises on Kubernetes, check out [`advanced`][advanced]. Each exercise get more
+complicated, and can be found in the subdirectories.
 
-During the second day, we will have several scenarios with varying levels of difficulty and
-different focus areas. These can be found in subfolders of [`day2`][day2].
+If you are jumping straight into this one, ensure you have the cluster set up as described in the
+[infrastructure section](./beginner/README.md#infrastructure) of the beginner exercises.
 
-[day2]: ./day2/
+[advanced]: ./advanced/
 

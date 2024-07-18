@@ -1,7 +1,7 @@
-# IPT Workshop Climb&Code Day 1
+# IPT Kubernetes Workshop - Beginner
 
 <!--toc:start-->
-- [IPT Workshop Climb&Code Day 1](#ipt-workshop-climbcode-day-1)
+- [IPT Kubernetes Workshop - Beginner](#ipt-kubernetes-workshop-beginner)
   - [Preparation](#preparation)
   - [Workshop Overview](#workshop-overview)
     - [Docker](#docker)
@@ -35,7 +35,7 @@ And initialize the git submodules to obtain our demo application:
 ```bash
 cd k8s-workshop
 git submodule update --init --checkout
-cd day1
+cd beginner
 ```
 
 ### Docker

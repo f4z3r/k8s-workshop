@@ -4,11 +4,11 @@
 
 [solution]: ./solution.md
 
-As we saw yesterday, state should not be managed by your own applications, but should be
-externalized to other services. In this scenario we will create a small stateful application, which
-will manage its state via Redis.
+As you may know (if you did the beginner stuff), state should not be managed by your own
+applications, but should be externalized to other services. In this scenario we will create a small
+stateful application, which will manage its state via Redis.
 
-> Before starting, ensure you have the cluster from the exercise yesterday up and running.
+> Before starting, ensure you have the cluster from the exercise in beginner up and running.
 
 Steps to follow:
 
