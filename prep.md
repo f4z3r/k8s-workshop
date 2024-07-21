@@ -20,7 +20,7 @@ environments across all participants, we will use virtual machines.
 To get started, download and install any virtualization software that you desire. A very common one
 is [VirtualBox][0]. You can find many guides online on how to install it.
 
-Then, download the Ubuntu Focal 20.04 TLS image from the [official website][1]. Perform an
+Then, download the Ubuntu Focal 24.04 TLS image from the [official website][1]. Perform an
 installation of the virtual machine. Note that the install can be "minimal", no need to install
 Office Tools, etc.
 
