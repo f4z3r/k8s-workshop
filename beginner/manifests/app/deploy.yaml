@@ -16,7 +16,7 @@ spec:
         app: sb-demo
     spec:
       containers:
-      - image: k3d-erfa.localhost:5000/infra-cluster:infra
+      - image: k3d-erfa.localhost:5000/sb-demo:0.1.0
         imagePullPolicy: Always
         env:
         - name: JDBC_URL

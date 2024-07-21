@@ -24,7 +24,7 @@ environment up and running and be ready on the day of the workshop.
 
 ## Workshop Overview
 
-In case you have not ready, please clone this repository to the VM:
+In case you have not already, please clone this repository to the VM:
 
 ```bash
 git clone https://github.com/f4z3r/k8s-workshop.git
@@ -136,8 +136,8 @@ resilient it is:
 
 ```bash
 # build and push the docker image to a shared registry
-docker build -t k3d-erfa.localhost:5000/infra-cluster:infra -f ./infra-dockerfile ./
-docker push k3d-erfa.localhost:5000/infra-cluster:infra
+docker build -t k3d-erfa.localhost:5000/sb-demo:0.1.0 -f ./erfa-dockerfile ./
+docker push k3d-erfa.localhost:5000/sb-demo:0.1.0
 # deploy everything into our cluster
 kubectl create ns demo
 kubectl apply -f ./manifests/app/
