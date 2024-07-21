@@ -191,6 +191,14 @@ applications that are exposed outside the cluster. Moreover, always follow the p
 privilege when providing permissions to service accounts to applications. Actually, follow the
 principle of least privilege everywhere at all times.
 
+Finally, using NetworkPolicies in order to restrict egress connections would have made it more
+difficult to get access to external tooling such as `kubectl`, or even updating the package
+registry. Using NetworkPolicies is typically a very good idea, even though it makes debugging stuff
+on Kubernetes much more complex. In reality, NetworkPolicies tend to be configured way to
+permissively and thus their usage is made much less effectively, as pods tend to have access to way
+bigger parts of the internet than needed, and tend to even have very permissive access to other
+resources running on the cluster.
+
 </details>
 
 ## Take a Moment to Think

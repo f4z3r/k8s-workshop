@@ -21,7 +21,7 @@ Steps to follow:
    `/readiness` endpoints. Moreover, you will need to retrieve the Redis password from a Secret
    resource in that namespace.
 5. Build the code with `docker` using the provided `Dockerfile`, calling the image
-   `k3d-infra.localhost:5000/helm-and-state:0.1.0`. Check out the
+   `k3d-erfa.localhost:5000/helm-and-state:0.1.0`. Check out the
    `Dockerfile` for a reminder.
 6. Push the image to your local registry.
 7. Deploy your application to Kubernetes using a deployment.

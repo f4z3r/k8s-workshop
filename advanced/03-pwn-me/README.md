@@ -39,7 +39,7 @@ kubectl create ns pwn-me
 # install the required information
 helm install pwn-me deps/
 # restrict your access to the cluster as you would have no access as an attacker
-./handicap-me.sh
+bash ./handicap-me.sh
 ```
 
 ## The Flag
