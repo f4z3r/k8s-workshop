@@ -1,5 +1,5 @@
 # Build image
-FROM maven:3.8.1-jdk-8 AS maven
+FROM maven:3.8.1-jdk-11-slim AS maven
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ RUN mvn package
 
 
 # Runtime image
-FROM openjdk:8-jre
+FROM openjdk:11-jre
 
 WORKDIR /app
 
